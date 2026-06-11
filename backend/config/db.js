@@ -1,6 +1,8 @@
 const { Pool, types } = require('pg');
 // Parse numeric (OID 1700) as float to avoid returning decimal as string
 types.setTypeParser(1700, val => val === null ? null : parseFloat(val));
+// Parse bigint (OID 20) as integer to avoid returning sums as string
+types.setTypeParser(20, val => val === null ? null : parseInt(val, 10));
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '../.env') });
 

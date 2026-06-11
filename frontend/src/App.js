@@ -112,7 +112,7 @@ const stackedTotalsPlugin = {
         if (meta.hidden) return;
         
         const stackName = dataset.stack || 'default';
-        const val = dataset.data[index] || 0;
+        const val = Number(dataset.data[index]) || 0;
         
         if (!stacks[stackName]) {
           stacks[stackName] = {
@@ -1019,7 +1019,7 @@ function App() {
       {
         type: 'bar',
         label: 'ค่าใช้จ่ายรวม (บาท)',
-        data: [...summaryData].reverse().map(item => item.total_cost),
+        data: [...summaryData].reverse().map(item => Number(item.total_cost)),
         backgroundColor: 'rgba(59, 130, 246, 0.65)',
         borderColor: '#3b82f6',
         borderWidth: 1,
@@ -1028,7 +1028,7 @@ function App() {
       {
         type: 'line',
         label: 'จำนวนแผ่นรวม (แผ่น)',
-        data: [...summaryData].reverse().map(item => item.total_pages),
+        data: [...summaryData].reverse().map(item => Number(item.total_pages)),
         borderColor: '#8b5cf6',
         backgroundColor: 'rgba(139, 92, 246, 0.15)',
         fill: true,
@@ -1080,11 +1080,11 @@ function App() {
     categoryTrendData.forEach(item => {
       const mIdx = item.month - 1;
       if (mIdx >= 0 && mIdx < 12) {
-        printBwData[mIdx] = item.print_bw || 0;
-        printColorData[mIdx] = item.print_color || 0;
-        copyBwData[mIdx] = item.copy_bw || 0;
-        copyColorData[mIdx] = item.copy_color || 0;
-        scannerData[mIdx] = item.scanner || 0;
+        printBwData[mIdx] = Number(item.print_bw) || 0;
+        printColorData[mIdx] = Number(item.print_color) || 0;
+        copyBwData[mIdx] = Number(item.copy_bw) || 0;
+        copyColorData[mIdx] = Number(item.copy_color) || 0;
+        scannerData[mIdx] = Number(item.scanner) || 0;
       }
     });
 
@@ -1875,12 +1875,13 @@ function App() {
             {/* Chart breakdown and data card */}
             {categoriesData ? (
               <div className="row g-4">
-                <div className="col-12 col-lg-5">
-                  <div className="glass-card d-flex flex-column align-items-center justify-content-center mb-4">
+                {/* 1. Full-width Graph */}
+                <div className="col-12">
+                  <div className="glass-card d-flex flex-column align-items-center justify-content-center">
                     <h5 className="fw-bold mb-4 w-100 text-start">
                       {catFilterYear ? `เปรียบเทียบการใช้งานรายเดือน ปี ${catFilterYear}` : 'เปรียบเทียบการใช้งานรายเดือน'}
                     </h5>
-                    <div style={{ width: '100%', height: '280px' }} className="d-flex align-items-center justify-content-center">
+                    <div style={{ width: '100%', height: '480px' }} className="d-flex align-items-center justify-content-center">
                       {categoryBarData ? (
                         <Bar 
                           data={categoryBarData} 
@@ -1905,86 +1906,11 @@ function App() {
                       )}
                     </div>
                   </div>
-
-                  <div className="glass-card animate-fade-in">
-                    <h5 className="fw-bold mb-3 d-flex align-items-center">
-                      <Shield size={18} className="text-warning me-2" />
-                      ตั้งค่าอัตราค่าบริการ (Rate Settings)
-                    </h5>
-                    <form onSubmit={handleRatesSubmit}>
-                      <div className="row g-2 mb-2">
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print ขาวดำ (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.print_bw}
-                            onChange={(e) => setEditRates({ ...editRates, print_bw: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print สี (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.print_color}
-                            onChange={(e) => setEditRates({ ...editRates, print_color: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                      </div>
-                      <div className="row g-2 mb-2">
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy ขาวดำ (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.copy_bw}
-                            onChange={(e) => setEditRates({ ...editRates, copy_bw: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy สี (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.copy_color}
-                            onChange={(e) => setEditRates({ ...editRates, copy_color: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>สแกนเนอร์ (บาท)</label>
-                        <input 
-                          type="number" 
-                          step="0.01" 
-                          className="form-control form-glass" 
-                          value={editRates.scan}
-                          onChange={(e) => setEditRates({ ...editRates, scan: e.target.value })}
-                          required
-                          disabled={userRole !== 'admin'}
-                        />
-                      </div>
-                      <button type="submit" className="btn btn-sm btn-glass-primary w-100 py-2" disabled={loading || userRole !== 'admin'}>
-                        {userRole !== 'admin' ? 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขได้' : (loading ? 'กำลังบันทึก...' : 'บันทึกอัตราค่าบริการใหม่')}
-                      </button>
-                    </form>
-                  </div>
                 </div>
 
+                {/* 2. Bottom Row - Column 1: Stats Details */}
                 <div className="col-12 col-lg-7">
-                  <div className="glass-card">
+                  <div className="glass-card h-100">
                     <h5 className="fw-bold mb-4">รายละเอียดสถิติและอัตราค่าใช้จ่าย</h5>
                     <div className="table-responsive">
                       <table className="table table-glass">
@@ -2062,6 +1988,85 @@ function App() {
                         </tbody>
                       </table>
                     </div>
+                  </div>
+                </div>
+
+                {/* 2. Bottom Row - Column 2: Rate Settings */}
+                <div className="col-12 col-lg-5">
+                  <div className="glass-card animate-fade-in h-100">
+                    <h5 className="fw-bold mb-3 d-flex align-items-center">
+                      <Shield size={18} className="text-warning me-2" />
+                      ตั้งค่าอัตราค่าบริการ (Rate Settings)
+                    </h5>
+                    <form onSubmit={handleRatesSubmit}>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print ขาวดำ (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.print_bw}
+                            onChange={(e) => setEditRates({ ...editRates, print_bw: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print สี (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.print_color}
+                            onChange={(e) => setEditRates({ ...editRates, print_color: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                      </div>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy ขาวดำ (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.copy_bw}
+                            onChange={(e) => setEditRates({ ...editRates, copy_bw: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy สี (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.copy_color}
+                            onChange={(e) => setEditRates({ ...editRates, copy_color: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>สแกนเนอร์ (บาท)</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          className="form-control form-glass" 
+                          value={editRates.scan}
+                          onChange={(e) => setEditRates({ ...editRates, scan: e.target.value })}
+                          required
+                          disabled={userRole !== 'admin'}
+                        />
+                      </div>
+                      <button type="submit" className="btn btn-sm btn-glass-primary w-100 py-2" disabled={loading || userRole !== 'admin'}>
+                        {userRole !== 'admin' ? 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขได้' : (loading ? 'กำลังบันทึก...' : 'บันทึกอัตราค่าบริการใหม่')}
+                      </button>
+                    </form>
                   </div>
                 </div>
               </div>
