@@ -1,0 +1,444 @@
+/* =========================================================================
+   Copier Summarizer Dashboard Design System - Vanilla CSS
+   Theme: Premium Red & White Theme (Clean Sans-Serif with Red Accents)
+   ========================================================================= */
+
+:root {
+  --bg-primary: #f4f6f9;
+  --bg-secondary: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --accent-red: #c82333;
+  --accent-red-hover: #a71d2a;
+  --accent-blue: #c82333; /* Override accent blue with theme red */
+  --accent-purple: #8b5cf6;
+  --accent-green: #10b981;
+  --accent-amber: #f59e0b;
+  --accent-rose: #ef4444;
+  --glass-bg: #ffffff;
+  --glass-border: #e2e8f0;
+  --glass-glow: rgba(200, 35, 51, 0.05);
+  --font-family: 'Inter', 'Outfit', 'Sarabun', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --transition-smooth: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-family);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(200, 35, 51, 0.15);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(200, 35, 51, 0.3);
+}
+
+/* Override bootstrap primary to match red theme */
+.text-primary {
+  color: var(--accent-red) !important;
+}
+.btn-primary {
+  background-color: var(--accent-red) !important;
+  border-color: var(--accent-red) !important;
+}
+.btn-primary:hover {
+  background-color: var(--accent-red-hover) !important;
+  border-color: var(--accent-red-hover) !important;
+}
+.btn-outline-primary {
+  color: var(--accent-red) !important;
+  border-color: var(--accent-red) !important;
+}
+.btn-outline-primary:hover {
+  background-color: var(--accent-red) !important;
+  color: #ffffff !important;
+}
+
+/* Premium Card Layouts */
+.glass-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+  transition: var(--transition-smooth);
+}
+
+.glass-card:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+}
+
+/* Sidebar Styling - Solid Red Theme */
+.sidebar {
+  background: var(--accent-red);
+  border-right: 1px solid var(--accent-red-hover);
+  min-height: 100vh;
+  z-index: 100;
+  box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05);
+}
+
+.sidebar .border-secondary {
+  border-color: rgba(255, 255, 255, 0.15) !important;
+}
+
+/* Sidebar Specific Glass Card overrides */
+.sidebar .glass-card {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  color: #ffffff !important;
+  box-shadow: none;
+}
+.sidebar .glass-card:hover {
+  transform: none;
+  background: rgba(255, 255, 255, 0.15) !important;
+}
+.sidebar .glass-card .text-muted,
+.sidebar .glass-card .text-secondary {
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+/* Form Switch overrides inside Sidebar */
+.sidebar .form-check-input {
+  background-color: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+.sidebar .form-check-input:checked {
+  background-color: #ffffff;
+  border-color: #ffffff;
+}
+
+/* Sidebar active links - White background with Red text */
+.nav-link-custom {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: rgba(255, 255, 255, 0.85);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: var(--transition-smooth);
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+
+.nav-link-custom:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateX(4px);
+}
+
+.nav-link-custom.active {
+  color: var(--accent-red) !important;
+  background: #ffffff !important;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+/* Gradient Titles */
+.text-gradient {
+  background: linear-gradient(135deg, var(--accent-red), #780016);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.sidebar .text-gradient {
+  background: linear-gradient(135deg, #ffffff, #ffebee);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.text-gradient-green {
+  background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 700;
+  display: inline-block;
+}
+
+/* Tables Styling with Red Accents */
+.table-glass {
+  color: var(--text-primary) !important;
+}
+
+.table-glass th {
+  background: #f8fafc !important;
+  color: var(--text-secondary) !important;
+  border-bottom: 2px solid var(--glass-border) !important;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  padding: 0.85rem 1rem;
+}
+
+.table-glass td {
+  background: transparent !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle;
+  color: var(--text-primary) !important;
+  padding: 0.85rem 1rem;
+}
+
+.table-glass .text-white {
+  color: var(--text-primary) !important;
+}
+
+.table-glass tbody tr {
+  transition: var(--transition-smooth);
+}
+
+.table-glass tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Dashboard Metric Badges */
+.metric-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.metric-blue {
+  background: rgba(200, 35, 51, 0.08);
+  color: var(--accent-red);
+  border: 1px solid rgba(200, 35, 51, 0.15);
+}
+
+.metric-purple {
+  background: rgba(139, 92, 246, 0.08);
+  color: var(--accent-purple);
+  border: 1px solid rgba(139, 92, 246, 0.15);
+}
+
+.metric-green {
+  background: rgba(16, 185, 129, 0.08);
+  color: var(--accent-green);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+.metric-amber {
+  background: rgba(245, 158, 11, 0.08);
+  color: var(--accent-amber);
+  border: 1px solid rgba(245, 158, 11, 0.15);
+}
+
+/* Upload Area */
+.upload-zone {
+  border: 2px dashed #cbd5e1;
+  border-radius: 12px;
+  background: #f8fafc;
+  padding: 3rem 2rem;
+  text-align: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.upload-zone:hover, .upload-zone.active {
+  border-color: var(--accent-red);
+  background: rgba(200, 35, 51, 0.02);
+  box-shadow: inset 0 0 10px rgba(200, 35, 51, 0.03);
+}
+
+/* Form Controls with Red focus indicator */
+.form-glass {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: var(--text-primary) !important;
+  border-radius: 8px !important;
+  transition: var(--transition-smooth);
+}
+
+.form-glass:focus {
+  border-color: var(--accent-red) !important;
+  box-shadow: 0 0 0 3px rgba(200, 35, 51, 0.15) !important;
+  background: #ffffff !important;
+}
+
+.form-glass::placeholder {
+  color: #a0aec0;
+}
+
+/* Buttons with Red Theme */
+.btn-glass-primary {
+  background: var(--accent-red);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  padding: 0.6rem 1.5rem;
+  box-shadow: 0 4px 6px -1px rgba(200, 35, 51, 0.15);
+  transition: var(--transition-smooth);
+}
+
+.btn-glass-primary:hover {
+  transform: translateY(-1px);
+  background: var(--accent-red-hover);
+  box-shadow: 0 8px 12px -3px rgba(200, 35, 51, 0.25);
+  color: #ffffff;
+}
+
+.btn-glass-primary:active {
+  transform: translateY(0);
+}
+
+.btn-glass-danger {
+  background: rgba(239, 68, 68, 0.08);
+  color: var(--accent-rose);
+  border: 1px solid rgba(239, 68, 68, 0.18);
+  border-radius: 8px;
+  font-weight: 500;
+  transition: var(--transition-smooth);
+}
+
+.btn-glass-danger:hover {
+  background: var(--accent-rose);
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+}
+
+/* Micro-animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.35s ease-out forwards;
+}
+
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.15s; }
+.delay-3 { animation-delay: 0.22s; }
+.delay-4 { animation-delay: 0.28s; }
+
+/* Custom Search Autosuggestion list */
+.autosuggest-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  list-style: none;
+  padding: 0;
+  margin: 4px 0 0 0;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+}
+
+.autosuggest-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  border-bottom: 1px solid #f1f5f9;
+  color: var(--text-primary);
+}
+
+.autosuggest-item:hover {
+  background: #f8fafc;
+  color: var(--accent-red);
+}
+
+/* Pulse animation for load statuses */
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+.pulse-loading {
+  animation: pulse 1.5s infinite;
+}
+
+/* =========================================================================
+   Contrast Overrides for Light Theme & List/Autosuggest Items
+   ========================================================================= */
+
+/* Override text-white class for components in the light main content column */
+.col .text-white,
+.table-glass .text-white,
+.list-group-item.text-white,
+.autosuggest-item.text-white {
+  color: var(--text-primary) !important;
+}
+
+/* Custom list-group-item styling for user list */
+.list-group-item {
+  color: var(--text-primary) !important;
+  background-color: transparent !important;
+  border: none !important;
+  transition: var(--transition-smooth);
+}
+
+.list-group-item:hover {
+  background-color: #f1f5f9 !important;
+  color: var(--accent-red) !important;
+}
+
+/* Selected active user in the list (Bootstrap/inline style override) */
+.list-group-item.bg-primary-dark-glow,
+.list-group-item[style*="rgba(59, 130, 246"] {
+  background-color: rgba(200, 35, 51, 0.1) !important;
+  color: var(--accent-red) !important;
+  font-weight: 600;
+}
+
+/* Ensure secondary select/input elements have readable dark text on white */
+.form-glass {
+  color: var(--text-primary) !important;
+}
+.form-glass option {
+  background-color: #ffffff;
+  color: var(--text-primary);
+}
+
+/* Custom Modal Overlay */
+.custom-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+.custom-modal-content {
+  max-width: 500px;
+  width: 90%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}

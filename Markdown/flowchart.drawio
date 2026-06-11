@@ -1,0 +1,133 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.5.2 Chrome/142.0.7444.265 Electron/39.6.1 Safari/537.36" version="29.5.2">
+  <diagram name="Page-1" id="yiPkk70M_QS0m_qrLIgr">
+    <mxGraphModel dx="1426" dy="841" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-1" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="เริ่มการทำงาน" vertex="1">
+          <mxGeometry height="54" width="151" x="217" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-2" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;" value="มีไฟล์ .csv ใน Inbox หรือไม่?" vertex="1">
+          <mxGeometry height="247" width="247" x="169" y="124" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-3" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="พิมพ์ข้อความแจ้งเตือนและสิ้นสุดการทำงาน" vertex="1">
+          <mxGeometry height="78" width="260" x="20" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-4" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="เริ่มประมวลผลทีละไฟล์" vertex="1">
+          <mxGeometry height="54" width="211" x="330" y="457" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-5" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 1: Security Check &amp; Validate" vertex="1">
+          <mxGeometry height="78" width="260" x="223" y="573" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-6" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 2: Masking &amp; Calculation" vertex="1">
+          <mxGeometry height="78" width="260" x="223" y="701" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-7" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 3: Save Cleaned CSV" vertex="1">
+          <mxGeometry height="54" width="242" x="232" y="829" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-8" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 4: Save User CSV" vertex="1">
+          <mxGeometry height="54" width="216" x="245" y="933" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-9" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 5: Generate Markdown Report" vertex="1">
+          <mxGeometry height="78" width="260" x="223" y="1037" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-10" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 6: Export Excel Report" vertex="1">
+          <mxGeometry height="54" width="257" x="224" y="1165" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-11" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="Step 7: Backup &amp; Delete from Inbox" vertex="1">
+          <mxGeometry height="78" width="260" x="223" y="1269" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-12" parent="1" style="rhombus;strokeWidth=2;whiteSpace=wrap;" value="เหลือไฟล์ถัดไปหรือไม่?" vertex="1">
+          <mxGeometry height="207" width="207" x="332" y="1397" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-13" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="บันทึก Run Log และแสดงสรุปผลสำเร็จ" vertex="1">
+          <mxGeometry height="78" width="260" x="305" y="1677" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-14" parent="1" style="whiteSpace=wrap;strokeWidth=2;" value="สิ้นสุดการทำงาน" vertex="1">
+          <mxGeometry height="54" width="168" x="351" y="1805" as="geometry" />
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-15" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-1" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-2" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-16" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-2" style="curved=1;startArrow=none;endArrow=block;exitX=0.06;exitY=1;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-3" value="ไม่มี">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="150" y="408" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-17" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-2" style="curved=1;startArrow=none;endArrow=block;exitX=0.95;exitY=1;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-4" value="มี">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="435" y="408" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-18" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-4" style="curved=1;startArrow=none;endArrow=block;exitX=0.33;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-5" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="353" y="548" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-19" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-5" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-6" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-20" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-6" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-7" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-21" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-7" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-8" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-22" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-8" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-9" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-23" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-9" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-10" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-24" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-10" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.5;entryY=-0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-25" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-11" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=0.99;entryX=0.18;entryY=0;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-12" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="353" y="1372" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-26" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-12" style="curved=1;startArrow=none;endArrow=block;exitX=0.82;exitY=0;entryX=0.66;entryY=0.99;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-4" value="มี">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="518" y="1372" />
+              <mxPoint x="518" y="548" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-27" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-12" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-13" value="ไม่มี">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="IIWoqcQUWwyrLVN24xfF-28" edge="1" parent="1" source="IIWoqcQUWwyrLVN24xfF-13" style="curved=1;startArrow=none;endArrow=block;exitX=0.5;exitY=1;entryX=0.5;entryY=0.01;rounded=0;" target="IIWoqcQUWwyrLVN24xfF-14" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points" />
+          </mxGeometry>
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

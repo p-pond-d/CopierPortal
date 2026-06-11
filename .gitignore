@@ -1,0 +1,10 @@
+node_modules/
+build/
+.env
+.env.local
+.env.*.local
+*.log
+verify.ps1
+push_to_github.ps1
+backend_stdout.log
+backend_stderr.log
