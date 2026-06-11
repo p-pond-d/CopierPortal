@@ -188,6 +188,12 @@ function App() {
   const [isImporting, setIsImporting] = useState(false);
   const [importProgress, setImportProgress] = useState(0);
 
+  // Report details preview state
+  const [previewReport, setPreviewReport] = useState(null);
+  const [previewDetails, setPreviewDetails] = useState([]);
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewSearch, setPreviewSearch] = useState('');
+
   // Upload state
   const [uploadFile, setUploadFile] = useState(null);
   const [uploadPeriod, setUploadPeriod] = useState(() => {
@@ -624,6 +630,21 @@ function App() {
     setUploadConflict(null);
     setSelectedUserIdsForImport([]);
     setShowComparisonTable(false);
+  };
+
+  const handlePreviewReport = async (rep) => {
+    setPreviewReport(rep);
+    setPreviewLoading(true);
+    try {
+      const res = await axios.get(`${API_BASE}/reports/${rep.id}/details`);
+      setPreviewDetails(res.data);
+    } catch (err) {
+      console.error('Error fetching report details for preview:', err);
+      showAlert('danger', 'ไม่สามารถดึงข้อมูลรายละเอียดรายงานสำหรับพรีวิวได้');
+      setPreviewReport(null);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const handleDeleteReport = async (id) => {
@@ -2300,6 +2321,14 @@ function App() {
                               </td>
                               <td className="text-center">
                                 <button 
+                                  onClick={() => handlePreviewReport(rep)} 
+                                  className="btn btn-sm btn-glass-primary py-1 px-2 me-2 text-white"
+                                  style={{ background: 'rgba(255, 51, 102, 0.15)', border: '1px solid rgba(255, 51, 102, 0.3)' }}
+                                  title="ดูตัวอย่างข้อมูลไฟล์นี้"
+                                >
+                                  <Eye size={14} />
+                                </button>
+                                <button 
                                   onClick={() => handleDeleteReport(rep.id)} 
                                   className="btn btn-sm btn-glass-danger py-1 px-2"
                                   title="ลบรายงานนี้ออกจากฐานข้อมูล"
@@ -3076,6 +3105,229 @@ function App() {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Report Details Preview Modal Overlay */}
+      {previewReport && (() => {
+        const filteredDetails = previewDetails.filter(r => {
+          const query = previewSearch.toLowerCase().trim();
+          if (!query) return true;
+          const userId = String(r.user_id || '').toLowerCase();
+          const name = String(r.name || '').toLowerCase();
+          return userId.includes(query) || name.includes(query);
+        });
+
+        const totalBw = previewDetails.reduce((sum, r) => sum + (r.print_bw || 0), 0);
+        const totalColor = previewDetails.reduce((sum, r) => sum + (r.print_color || 0), 0);
+        const totalCopyBw = previewDetails.reduce((sum, r) => sum + (r.copy_bw || 0), 0);
+        const totalCopyColor = previewDetails.reduce((sum, r) => sum + (r.copy_color || 0), 0);
+        const totalScan = previewDetails.reduce((sum, r) => sum + (r.scanner || 0), 0);
+        const totalPages = previewDetails.reduce((sum, r) => sum + (r.total_pages || 0), 0);
+        const totalCost = previewDetails.reduce((sum, r) => sum + (r.cost || 0), 0);
+        const totalUsers = previewDetails.length;
+
+        return (
+          <div className="custom-modal-overlay">
+            <div 
+              className="custom-modal-content glass-card animate-fade-in p-4" 
+              style={{ 
+                maxWidth: '1000px', 
+                width: '95%', 
+                maxHeight: '90vh', 
+                display: 'flex', 
+                flexDirection: 'column',
+                background: '#ffffff',
+                border: '1px solid #cbd5e1',
+                color: '#1e293b'
+              }}
+            >
+              {/* Modal Header */}
+              <div className="d-flex justify-content-between align-items-center pb-3 border-bottom mb-3">
+                <div className="d-flex align-items-center gap-2">
+                  <div className="bg-light p-2 rounded text-primary" style={{ background: 'rgba(200, 35, 51, 0.08)' }}>
+                    <FileText size={24} className="text-primary" />
+                  </div>
+                  <div>
+                    <h5 className="fw-bold text-dark mb-0 text-truncate" style={{ maxWidth: '400px' }} title={previewReport.filename}>
+                      {previewReport.filename}
+                    </h5>
+                    <small className="text-secondary">
+                      งวดรายงาน: <strong>{formatThaiMonthYear(previewReport.report_date)}</strong> 
+                      {previewReport.printer_name && (
+                        <> | เครื่องพิมพ์: <strong>{previewReport.printer_name}</strong></>
+                      )}
+                    </small>
+                  </div>
+                </div>
+                <div className="d-flex align-items-center gap-2">
+                  {/* Mask Toggle */}
+                  <button 
+                    onClick={() => setIsMasked(!isMasked)} 
+                    className="btn btn-sm btn-outline-secondary form-glass py-1 px-2 d-flex align-items-center gap-1"
+                    title={isMasked ? 'แสดงข้อมูลจริง' : 'ซ่อนข้อมูลส่วนตัว'}
+                  >
+                    {isMasked ? <Eye size={14} /> : <EyeOff size={14} />}
+                    {isMasked ? 'แสดงชื่อจริง' : 'ซ่อนชื่อ/รหัส'}
+                  </button>
+                  <button 
+                    onClick={() => {
+                      setPreviewReport(null);
+                      setPreviewDetails([]);
+                      setPreviewSearch('');
+                    }} 
+                    className="btn-close"
+                    aria-label="Close"
+                  ></button>
+                </div>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-grow-1 d-flex flex-column" style={{ overflow: 'hidden' }}>
+                {previewLoading ? (
+                  <div className="d-flex flex-column align-items-center justify-content-center py-5 my-5 flex-grow-1">
+                    <div className="spinner-border text-primary mb-3" role="status" style={{ color: 'var(--accent-red)' }}>
+                      <span className="visually-hidden">กำลังโหลด...</span>
+                    </div>
+                    <span className="text-muted fw-semibold">กำลังดึงรายละเอียดข้อมูลจากฐานข้อมูล...</span>
+                  </div>
+                ) : (
+                  <>
+                    {/* Summary Stats Cards */}
+                    <div className="row g-2 mb-3">
+                      <div className="col-6 col-md-3">
+                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-red)', background: '#f8fafc' }}>
+                          <small className="text-secondary d-block mb-1">ยอดเงินรวมทั้งหมด</small>
+                          <span className="fw-bold text-gradient text-danger" style={{ fontSize: '1.2rem' }}>
+                            {totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
+                          </span>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-purple)', background: '#f8fafc' }}>
+                          <small className="text-secondary d-block mb-1">จำนวนผู้ใช้งานในไฟล์</small>
+                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
+                            {totalUsers.toLocaleString()} คน
+                          </span>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-green)', background: '#f8fafc' }}>
+                          <small className="text-secondary d-block mb-1">จำนวนพิมพ์ขาวดำรวม</small>
+                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
+                            {totalBw.toLocaleString()} แผ่น
+                          </span>
+                        </div>
+                      </div>
+                      <div className="col-6 col-md-3">
+                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-amber)', background: '#f8fafc' }}>
+                          <small className="text-secondary d-block mb-1">จำนวนพิมพ์สีรวม</small>
+                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
+                            {totalColor.toLocaleString()} แผ่น
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="mb-3 position-relative">
+                      <div className="input-group">
+                        <span className="input-group-text bg-white border-end-0">
+                          <Search size={16} className="text-muted" />
+                        </span>
+                        <input 
+                          type="text" 
+                          className="form-control form-glass border-start-0 ps-0" 
+                          placeholder="ค้นหาพนักงานด้วย รหัสผู้ใช้ หรือ ชื่อพนักงาน..." 
+                          value={previewSearch}
+                          onChange={(e) => setPreviewSearch(e.target.value)}
+                        />
+                        {previewSearch && (
+                          <button 
+                            className="btn btn-outline-secondary form-glass" 
+                            type="button"
+                            onClick={() => setPreviewSearch('')}
+                          >
+                            ล้างค่า
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Table Container */}
+                    <div className="table-responsive border rounded-3 flex-grow-1" style={{ overflowY: 'auto', background: '#f8fafc', maxHeight: '350px' }}>
+                      <table className="table table-bordered table-sm align-middle mb-0" style={{ fontSize: '0.85rem', borderCollapse: 'separate' }}>
+                        <thead className="position-sticky top-0 bg-white" style={{ zIndex: 2 }}>
+                          <tr className="table-light text-center text-secondary">
+                            <th className="py-2" style={{ background: '#f8fafc' }}>รหัสผู้ใช้</th>
+                            <th style={{ background: '#f8fafc' }}>ชื่อพนักงาน</th>
+                            <th style={{ background: '#f8fafc', width: '90px' }}>Print B&W</th>
+                            <th style={{ background: '#f8fafc', width: '90px' }}>Print Color</th>
+                            <th style={{ background: '#f8fafc', width: '90px' }}>Copy B&W</th>
+                            <th style={{ background: '#f8fafc', width: '90px' }}>Copy Color</th>
+                            <th style={{ background: '#f8fafc', width: '80px' }}>Scan</th>
+                            <th style={{ background: '#f8fafc', width: '90px' }}>รวมหน้า</th>
+                            <th style={{ background: '#f8fafc', width: '110px' }}>ค่าบริการ (บาท)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filteredDetails.map((r) => {
+                            const displayUserId = isMasked ? maskValue(r.user_id) : r.user_id;
+                            const displayName = isMasked ? maskValue(r.name) : r.name;
+
+                            return (
+                              <tr key={r.id}>
+                                <td className="fw-semibold text-dark ps-3">{displayUserId}</td>
+                                <td className="text-dark">{displayName}</td>
+                                <td className="text-end text-muted">{(r.print_bw || 0).toLocaleString()}</td>
+                                <td className="text-end text-muted">{(r.print_color || 0).toLocaleString()}</td>
+                                <td className="text-end text-muted">{(r.copy_bw || 0).toLocaleString()}</td>
+                                <td className="text-end text-muted">{(r.copy_color || 0).toLocaleString()}</td>
+                                <td className="text-end text-muted">{(r.scanner || 0).toLocaleString()}</td>
+                                <td className="text-end fw-semibold text-dark">{(r.total_pages || 0).toLocaleString()}</td>
+                                <td className="text-end fw-bold text-gradient-green pe-3">{(r.cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
+                              </tr>
+                            );
+                          })}
+                          {filteredDetails.length === 0 && (
+                            <tr>
+                              <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการใช้งานสำหรับคำค้นหานี้</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Pagination / Total count indicator */}
+                    <div className="d-flex justify-content-between align-items-center mt-2 px-1" style={{ fontSize: '0.8rem' }}>
+                      <span className="text-muted">
+                        แสดง <strong>{filteredDetails.length}</strong> จาก <strong>{previewDetails.length}</strong> รายการ
+                      </span>
+                      {previewSearch && (
+                        <span className="badge bg-secondary">
+                          เปิดตัวกรองการค้นหาอยู่
+                        </span>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="pt-3 border-top mt-3 text-center">
+                <button 
+                  onClick={() => {
+                    setPreviewReport(null);
+                    setPreviewDetails([]);
+                    setPreviewSearch('');
+                  }} 
+                  className="btn btn-outline-secondary py-2 px-5"
+                >
+                  ปิดหน้าต่าง
+                </button>
               </div>
             </div>
           </div>
