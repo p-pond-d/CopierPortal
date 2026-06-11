@@ -240,6 +240,8 @@ function App() {
   const [inventoryForm, setInventoryForm] = useState({ printer_name: '', serial_number: '', location: '' });
   const [editingInventoryId, setEditingInventoryId] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [chartMode, setChartMode] = useState('trend'); // 'trend' or 'compare'
+  const [compareMetric, setCompareMetric] = useState('pages'); // 'pages' or 'cost'
 
   // Upload conflict warning modal state
   const [uploadConflict, setUploadConflict] = useState(null); // { filename, reportDate, printerName, conflictDetails, conflictType, fileToUpload }
@@ -839,6 +841,73 @@ function App() {
     showAlert('success', 'นำออกรายงานสถิติยอดการใช้งานรายเดือนสำเร็จ (Excel)');
   };
 
+  const exportYearlySummary = async () => {
+    if (yearlySummary.length === 0) {
+      showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
+      return;
+    }
+
+    try {
+      await axios.post(`${API_BASE}/logs`, {
+        action_type: 'EXPORT_YEARLY_SUMMARY',
+        action_details: 'นำออกรายงานเปรียบเทียบสถิติรายปี (Export Yearly Summary Excel)'
+      });
+    } catch (err) {
+      console.error('Failed to log yearly export:', err);
+    }
+
+    const headers = [
+      'ปี (พ.ศ.)',
+      'ปี (ค.ศ.)',
+      'จำนวนเดือนที่มีข้อมูล',
+      'Print B&W (แผ่น)',
+      'Print Color (แผ่น)',
+      'Copy B&W (แผ่น)',
+      'Copy Color (แผ่น)',
+      'Scanner (แผ่น)',
+      'รวมหน้า (แผ่น)',
+      'รวมค่าบริการ (บาท)',
+      'อัตราการเติบโตจำนวนแผ่น (YoY %)',
+      'อัตราการเติบโตค่าใช้จ่าย (YoY %)'
+    ];
+
+    const rows = yearlySummary.map(sum => [
+      sum.year + 543,
+      sum.year,
+      `${sum.months_count} เดือน`,
+      sum.print_bw || 0,
+      sum.print_color || 0,
+      sum.copy_bw || 0,
+      sum.copy_color || 0,
+      sum.scanner || 0,
+      sum.total_pages || 0,
+      sum.total_cost || 0,
+      sum.yoy_pages_pct !== null ? `${sum.yoy_pages_pct > 0 ? '+' : ''}${sum.yoy_pages_pct.toFixed(1)}%` : '-',
+      sum.yoy_cost_pct !== null ? `${sum.yoy_cost_pct > 0 ? '+' : ''}${sum.yoy_cost_pct.toFixed(1)}%` : '-'
+    ]);
+
+    const sumPrintBw = rows.reduce((sum, r) => sum + (r[3] || 0), 0);
+    const sumPrintColor = rows.reduce((sum, r) => sum + (r[4] || 0), 0);
+    const sumCopyBw = rows.reduce((sum, r) => sum + (r[5] || 0), 0);
+    const sumCopyColor = rows.reduce((sum, r) => sum + (r[6] || 0), 0);
+    const sumScanner = rows.reduce((sum, r) => sum + (r[7] || 0), 0);
+    const sumPages = rows.reduce((sum, r) => sum + (r[8] || 0), 0);
+    const sumCost = rows.reduce((sum, r) => sum + (r[9] || 0), 0);
+
+    const footerRows = [
+      [],
+      ['สรุปยอดรวมทั้งสิ้น', '', '', sumPrintBw, sumPrintColor, sumCopyBw, sumCopyColor, sumScanner, sumPages, sumCost],
+      [],
+      ['อัตราค่าบริการปัจจุบัน', 'Print B&W', 'Print Color', 'Copy B&W', 'Copy Color', 'Scanner'],
+      ['(บาท/แผ่น)', rates.print_bw, rates.print_color, rates.copy_bw, rates.copy_color, rates.scan]
+    ];
+
+    const allRows = [...rows, ...footerRows];
+
+    saveToExcel(headers, allRows, "Yearly Summary", `yearly_summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showAlert('success', 'นำออกรายงานเปรียบเทียบสถิติรายปีสำเร็จ (Excel)');
+  };
+
   const exportUserHistory = async () => {
     if (!selectedUser || userHistory.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
@@ -1078,6 +1147,55 @@ function App() {
   const totalPagesAllTime = summaryData.reduce((sum, item) => sum + item.total_pages, 0);
   const totalUsersActive = users.length;
 
+  const yearlySummary = (() => {
+    const yearsMap = {};
+    summaryData.forEach(item => {
+      const yr = item.year;
+      if (!yearsMap[yr]) {
+        yearsMap[yr] = {
+          year: yr,
+          total_users: 0,
+          print_bw: 0,
+          print_color: 0,
+          copy_bw: 0,
+          copy_color: 0,
+          scanner: 0,
+          total_pages: 0,
+          total_cost: 0,
+          months_count: 0
+        };
+      }
+      yearsMap[yr].print_bw += Number(item.print_bw) || 0;
+      yearsMap[yr].print_color += Number(item.print_color) || 0;
+      yearsMap[yr].copy_bw += Number(item.copy_bw) || 0;
+      yearsMap[yr].copy_color += Number(item.copy_color) || 0;
+      yearsMap[yr].scanner += Number(item.scanner) || 0;
+      yearsMap[yr].total_pages += Number(item.total_pages) || 0;
+      yearsMap[yr].total_cost += Number(item.total_cost) || 0;
+      yearsMap[yr].months_count += 1;
+    });
+
+    const sorted = Object.values(yearsMap).sort((a, b) => a.year - b.year); // oldest to newest
+    const result = sorted.map((yrData, idx) => {
+      if (idx === 0) {
+        return {
+          ...yrData,
+          yoy_pages_pct: null,
+          yoy_cost_pct: null
+        };
+      }
+      const prev = sorted[idx - 1];
+      const yoy_pages_pct = prev.total_pages > 0 ? ((yrData.total_pages - prev.total_pages) / prev.total_pages) * 100 : null;
+      const yoy_cost_pct = prev.total_cost > 0 ? ((yrData.total_cost - prev.total_cost) / prev.total_cost) * 100 : null;
+      return {
+        ...yrData,
+        yoy_pages_pct,
+        yoy_cost_pct
+      };
+    });
+    return result.reverse(); // newest to oldest
+  })();
+
   // Chart configs
   const trendChartData = {
     labels: [...summaryData].reverse().map(item => `${item.month}/${item.year}`),
@@ -1132,6 +1250,87 @@ function App() {
     },
     plugins: {
       legend: { labels: { color: '#475569' } }
+    }
+  };
+
+  const compareChartData = (() => {
+    const uniqueYears = Array.from(new Set(summaryData.map(item => item.year))).sort((a, b) => a - b);
+    const monthsThai = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+    const yearColors = [
+      { bg: 'rgba(148, 163, 184, 0.7)', border: '#94a3b8' }, // Slate/Gray
+      { bg: 'rgba(200, 35, 51, 0.8)', border: '#c82333' },   // Theme Red
+      { bg: 'rgba(139, 92, 246, 0.7)', border: '#8b5cf6' },  // Purple
+      { bg: 'rgba(16, 185, 129, 0.7)', border: '#10b981' }   // Green
+    ];
+
+    const datasets = uniqueYears.map((year, idx) => {
+      const data = Array(12).fill(0);
+      summaryData.forEach(item => {
+        if (item.year === year) {
+          const mIdx = item.month - 1;
+          if (mIdx >= 0 && mIdx < 12) {
+            data[mIdx] = compareMetric === 'pages' ? Number(item.total_pages) : Number(item.total_cost);
+          }
+        }
+      });
+
+      const color = yearColors[idx % yearColors.length];
+
+      return {
+        label: `ปี ${year + 543} (ค.ศ. ${year})`,
+        data,
+        backgroundColor: color.bg,
+        borderColor: color.border,
+        borderWidth: 1.5,
+        borderRadius: 4
+      };
+    });
+
+    return {
+      labels: monthsThai,
+      datasets
+    };
+  })();
+
+  const compareChartOptions = {
+    responsive: true,
+    scales: {
+      x: {
+        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        ticks: { color: '#475569' }
+      },
+      y: {
+        grid: { color: 'rgba(0, 0, 0, 0.05)' },
+        ticks: {
+          color: '#475569',
+          callback: function(value) {
+            return value.toLocaleString('th-TH');
+          }
+        },
+        title: {
+          display: true,
+          text: compareMetric === 'pages' ? 'จำนวนแผ่นรวม (แผ่น)' : 'ค่าใช้จ่ายรวม (บาท)',
+          color: '#475569',
+          font: { weight: 'bold' }
+        }
+      }
+    },
+    plugins: {
+      legend: { labels: { color: '#475569' } },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.raw !== null) {
+              label += context.raw.toLocaleString('th-TH') + (compareMetric === 'pages' ? ' แผ่น' : ' บาท');
+            }
+            return label;
+          }
+        }
+      }
     }
   };
 
@@ -1562,13 +1761,45 @@ function App() {
             <div className="row g-4 mb-4">
               <div className="col-12 col-xl-8">
                 <div className="glass-card h-100">
-                  <h5 className="fw-bold mb-4 d-flex align-items-center">
-                    <Layers size={18} className="text-primary me-2" />
-                    แนวโน้มการใช้งานรายเดือน (ยอดพิมพ์และค่าใช้จ่าย)
-                  </h5>
+                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
+                    <h5 className="fw-bold mb-0 d-flex align-items-center">
+                      <Layers size={18} className="text-primary me-2" />
+                      {chartMode === 'trend' ? 'แนวโน้มการใช้งานรายเดือน (ยอดพิมพ์และค่าใช้จ่าย)' : 'เปรียบเทียบสถิติรายปี (Year-over-Year)'}
+                    </h5>
+                    
+                    <div className="d-flex gap-2 w-100 w-sm-auto">
+                      {/* Mode Selector */}
+                      <select 
+                        className="form-select form-select-sm form-glass" 
+                        style={{ maxWidth: '160px' }}
+                        value={chartMode} 
+                        onChange={(e) => setChartMode(e.target.value)}
+                      >
+                        <option value="trend">แนวโน้มรายเดือน</option>
+                        <option value="compare">เปรียบเทียบรายปี</option>
+                      </select>
+
+                      {/* Metric Selector (only show in compare mode) */}
+                      {chartMode === 'compare' && (
+                        <select 
+                          className="form-select form-select-sm form-glass" 
+                          style={{ maxWidth: '180px' }}
+                          value={compareMetric} 
+                          onChange={(e) => setCompareMetric(e.target.value)}
+                        >
+                          <option value="pages">ยอดพิมพ์รวม (แผ่น)</option>
+                          <option value="cost">ค่าใช้จ่าย (บาท)</option>
+                        </select>
+                      )}
+                    </div>
+                  </div>
+
                   {summaryData.length > 0 ? (
                     <div style={{ height: '350px' }}>
-                      <Bar data={trendChartData} options={trendChartOptions} />
+                      <Bar 
+                        data={chartMode === 'trend' ? trendChartData : compareChartData} 
+                        options={chartMode === 'trend' ? trendChartOptions : compareChartOptions} 
+                      />
                     </div>
                   ) : (
                     <div className="d-flex flex-column align-items-center justify-content-center h-75 text-muted">
@@ -1631,56 +1862,115 @@ function App() {
               </div>
             </div>
 
-            {/* General monthly table list */}
+            {/* General summary table list */}
             <div className="glass-card">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">สรุปสถิติตามรายเดือน</h5>
-                <button onClick={exportMonthlySummary} className="btn btn-sm btn-glass-primary">
+                <h5 className="fw-bold mb-0">
+                  {chartMode === 'trend' ? 'สรุปสถิติตามรายเดือน' : 'เปรียบเทียบสรุปสถิติรายปี (Annual YoY Summary)'}
+                </h5>
+                <button 
+                  onClick={chartMode === 'trend' ? exportMonthlySummary : exportYearlySummary} 
+                  className="btn btn-sm btn-glass-primary"
+                >
                   นำออกรายงาน (Export Excel)
                 </button>
               </div>
               <div className="table-responsive">
-                <table className="table table-glass">
-                  <thead>
-                    <tr>
-                      <th>ประจำงวด</th>
-                      <th>จำนวนผู้ใช้งาน</th>
-                      <th className="text-end">Print B&W (แผ่น)</th>
-                      <th className="text-end">Print Color (แผ่น)</th>
-                      <th className="text-end">Copy B&W (แผ่น)</th>
-                      <th className="text-end">Copy Color (แผ่น)</th>
-                      <th className="text-end">Scanner (แผ่น)</th>
-                      <th className="text-end">รวมจำนวน (แผ่น)</th>
-                      <th className="text-end">รวมค่าใช้จ่าย (บาท)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summaryData.map((sum, index) => (
-                      <tr key={index}>
-                        <td className="text-white fw-bold">
-                          {formatThaiMonthYear(`${sum.year}-${String(sum.month).padStart(2, '0')}-02`)}
-                        </td>
-                        <td>{sum.total_users} คน</td>
-                        <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
-                        <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
-                        <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
-                        <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
-                        <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
-                        <td className="text-end font-weight-bold">
-                          <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
-                        </td>
-                        <td className="text-end font-weight-bold">
-                          <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
-                        </td>
-                      </tr>
-                    ))}
-                    {summaryData.length === 0 && (
+                {chartMode === 'trend' ? (
+                  <table className="table table-glass">
+                    <thead>
                       <tr>
-                        <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายเดือน</td>
+                        <th>ประจำงวด</th>
+                        <th>จำนวนผู้ใช้งาน</th>
+                        <th className="text-end">Print B&W (แผ่น)</th>
+                        <th className="text-end">Print Color (แผ่น)</th>
+                        <th className="text-end">Copy B&W (แผ่น)</th>
+                        <th className="text-end">Copy Color (แผ่น)</th>
+                        <th className="text-end">Scanner (แผ่น)</th>
+                        <th className="text-end">รวมจำนวน (แผ่น)</th>
+                        <th className="text-end">รวมค่าใช้จ่าย (บาท)</th>
                       </tr>
-                    )}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {summaryData.map((sum, index) => (
+                        <tr key={index}>
+                          <td className="text-white fw-bold">
+                            {formatThaiMonthYear(`${sum.year}-${String(sum.month).padStart(2, '0')}-02`)}
+                          </td>
+                          <td>{sum.total_users} คน</td>
+                          <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
+                          <td className="text-end font-weight-bold">
+                            <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
+                          </td>
+                          <td className="text-end font-weight-bold">
+                            <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                          </td>
+                        </tr>
+                      ))}
+                      {summaryData.length === 0 && (
+                        <tr>
+                          <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายเดือน</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                ) : (
+                  <table className="table table-glass">
+                    <thead>
+                      <tr>
+                        <th>ประจำปี</th>
+                        <th>จำนวนเดือนที่มีข้อมูล</th>
+                        <th className="text-end">Print B&W (แผ่น)</th>
+                        <th className="text-end">Print Color (แผ่น)</th>
+                        <th className="text-end">Copy B&W (แผ่น)</th>
+                        <th className="text-end">Copy Color (แผ่น)</th>
+                        <th className="text-end">Scanner (แผ่น)</th>
+                        <th className="text-end">รวมหน้า (แผ่น)</th>
+                        <th className="text-end">รวมค่าบริการ (บาท)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {yearlySummary.map((sum, index) => (
+                        <tr key={index}>
+                          <td className="text-white fw-bold">
+                            ปี {sum.year + 543} (ค.ศ. {sum.year})
+                          </td>
+                          <td>{sum.months_count} เดือน</td>
+                          <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
+                          <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
+                          <td className="text-end font-weight-bold">
+                            <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
+                            {sum.yoy_pages_pct !== null && (
+                              <span className={sum.yoy_pages_pct >= 0 ? "text-success ms-2" : "text-danger ms-2"} style={{ fontSize: '0.8rem' }} title="อัตราการเติบโต YoY">
+                                ({sum.yoy_pages_pct >= 0 ? '+' : ''}{sum.yoy_pages_pct.toFixed(1)}%)
+                              </span>
+                            )}
+                          </td>
+                          <td className="text-end font-weight-bold">
+                            <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                            {sum.yoy_cost_pct !== null && (
+                              <span className={sum.yoy_cost_pct >= 0 ? "text-success ms-2" : "text-danger ms-2"} style={{ fontSize: '0.8rem' }} title="อัตราการเติบโต YoY">
+                                ({sum.yoy_cost_pct >= 0 ? '+' : ''}{sum.yoy_cost_pct.toFixed(1)}%)
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                      {yearlySummary.length === 0 && (
+                        <tr>
+                          <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายปี</td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                )}
               </div>
             </div>
 
