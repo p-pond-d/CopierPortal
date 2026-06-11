@@ -536,6 +536,54 @@ router.get('/reports/categories', auth, async (req, res) => {
       });
     }
   } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// 5. Get detailed usage (CSV export helper) supporting yearly or monthly
+router.get('/reports/export/details', auth, async (req, res) => {
+  try {
+    const { year, month, printer } = req.query;
+    const pool = await poolPromise;
+    const request = pool.request();
+
+    let query = `
+      SELECT 
+        ud.user_id, ud.name, r.report_date, r.filename, r.printer_name,
+        ud.print_bw, ud.print_color, ud.copy_bw, ud.copy_color, ud.scanner, ud.total_pages, ud.cost
+      FROM UsageDetails ud
+      JOIN Reports r ON ud.report_id = r.id
+      WHERE 1=1
+    `;
+
+    if (year) {
+      request.input('year', sql.Int, parseInt(year, 10));
+      query += ` AND YEAR(r.report_date) = @year`;
+    }
+    if (month) {
+      request.input('month', sql.Int, parseInt(month, 10));
+      query += ` AND MONTH(r.report_date) = @month`;
+    }
+    if (printer) {
+      request.input('printer', sql.NVarChar, printer);
+      query += ` AND r.printer_name = @printer`;
+    }
+
+    query += ` ORDER BY r.report_date DESC, ud.cost DESC`;
+
+    const result = await request.query(query);
+    let records = result.recordset;
+
+    if (req.role === 'user') {
+      const { encodeId, maskName } = require('../utils/helpers');
+      records = records.map(r => ({
+        ...r,
+        user_id: encodeId(r.user_id),
+        name: maskName(r.name)
+      }));
+    }
+    res.json(records);
+  } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
@@ -698,54 +746,7 @@ router.delete('/inventory/printers/:id', auth, adminOnly, async (req, res) => {
   }
 });
 
-// 5. Get detailed usage (CSV export helper) supporting yearly or monthly
-router.get('/reports/export/details', auth, async (req, res) => {
-  try {
-    const { year, month, printer } = req.query;
-    const pool = await poolPromise;
-    const request = pool.request();
 
-    let query = `
-      SELECT 
-        ud.user_id, ud.name, r.report_date, r.filename, r.printer_name,
-        ud.print_bw, ud.print_color, ud.copy_bw, ud.copy_color, ud.scanner, ud.total_pages, ud.cost
-      FROM UsageDetails ud
-      JOIN Reports r ON ud.report_id = r.id
-      WHERE 1=1
-    `;
-
-    if (year) {
-      request.input('year', sql.Int, parseInt(year, 10));
-      query += ` AND YEAR(r.report_date) = @year`;
-    }
-    if (month) {
-      request.input('month', sql.Int, parseInt(month, 10));
-      query += ` AND MONTH(r.report_date) = @month`;
-    }
-    if (printer) {
-      request.input('printer', sql.NVarChar, printer);
-      query += ` AND r.printer_name = @printer`;
-    }
-
-    query += ` ORDER BY r.report_date DESC, ud.cost DESC`;
-
-    const result = await request.query(query);
-    let records = result.recordset;
-
-    if (req.role === 'user') {
-      const { encodeId, maskName } = require('../utils/helpers');
-      records = records.map(r => ({
-        ...r,
-        user_id: encodeId(r.user_id),
-        name: maskName(r.name)
-      }));
-    }
-    res.json(records);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: err.message });
-  }
-});
 
 // 6. Get category trend data grouped by month
 router.get('/reports/categories/trend', auth, async (req, res) => {
