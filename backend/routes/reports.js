@@ -384,7 +384,7 @@ router.get('/reports', auth, async (req, res) => {
     const result = await pool.request().query(`
       SELECT id, filename, printer_name, report_date, total_cost, uploaded_at 
       FROM Reports 
-      ORDER BY report_date DESC
+      ORDER BY report_date DESC, id DESC
     `);
     res.json(result.recordset);
   } catch (err) {

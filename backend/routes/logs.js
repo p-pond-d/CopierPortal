@@ -39,7 +39,7 @@ router.get('/admin/logs', auth, adminOnly, async (req, res) => {
       SELECT id, username, role, action_type, action_details, created_at
       FROM SystemLogs
       ${whereClause}
-      ORDER BY created_at DESC
+      ORDER BY created_at DESC, id DESC
       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY
     `);
 

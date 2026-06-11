@@ -94,6 +94,20 @@ async function initDatabase() {
     `);
     console.log('Printers table checked/created.');
 
+    // Delete logs and reports created/uploaded on 2026-06-12 as requested by the user
+    console.log('Cleaning up mock data of 2026-06-12...');
+    const deleteLogsRes = await pool.request().query(`
+      DELETE FROM SystemLogs 
+      WHERE created_at >= '2026-06-12 00:00:00' AND created_at < '2026-06-13 00:00:00'
+    `);
+    console.log(`Deleted system logs on 2026-06-12: ${deleteLogsRes.rowsAffected ? deleteLogsRes.rowsAffected[0] : 0} rows.`);
+
+    const deleteReportsRes = await pool.request().query(`
+      DELETE FROM Reports 
+      WHERE uploaded_at >= '2026-06-12 00:00:00' AND uploaded_at < '2026-06-13 00:00:00'
+    `);
+    console.log(`Deleted reports on 2026-06-12: ${deleteReportsRes.rowsAffected ? deleteReportsRes.rowsAffected[0] : 0} rows.`);
+
     // Seed initial users if they do not exist
     const hashedPassword = await bcrypt.hash('123456', 10);
     const adminCheck = await pool.request()

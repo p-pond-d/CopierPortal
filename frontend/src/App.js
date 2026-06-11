@@ -18,7 +18,9 @@ import {
   Layers,
   ChevronRight,
   Eye,
-  EyeOff
+  EyeOff,
+  Menu,
+  X
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -237,6 +239,7 @@ function App() {
   const [inventoryPrinters, setInventoryPrinters] = useState([]);
   const [inventoryForm, setInventoryForm] = useState({ printer_name: '', serial_number: '', location: '' });
   const [editingInventoryId, setEditingInventoryId] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Upload conflict warning modal state
   const [uploadConflict, setUploadConflict] = useState(null); // { filename, reportDate, printerName, conflictDetails, conflictType, fileToUpload }
@@ -1278,12 +1281,39 @@ function App() {
     );
   }
 
+  const handleNavClick = (tab) => {
+    setActiveTab(tab);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
-    <div className="container-fluid min-vh-100 d-flex p-0">
+    <div className="min-vh-100 d-flex flex-column flex-md-row position-relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
       
+      {/* Mobile Top Navbar Header */}
+      <div className="mobile-topbar d-flex d-md-none justify-content-between align-items-center bg-danger px-3 py-2 text-white position-fixed top-0 start-0 end-0" style={{ zIndex: 1040, height: '60px', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 10px rgba(0,0,0,0.15)', backgroundColor: 'var(--accent-red)' }}>
+        <div className="d-flex align-items-center">
+          <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.4)', background: '#fff', marginRight: '8px', flexShrink: 0 }}>
+            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          </div>
+          <span className="fs-5 fw-bold text-white">Copier Portal</span>
+        </div>
+        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="btn btn-link text-white p-1" style={{ border: 'none', background: 'transparent' }}>
+          {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
+        </button>
+      </div>
+
+      {/* Backdrop overlay for mobile menu */}
+      {isMobileMenuOpen && (
+        <div 
+          className="d-block d-md-none" 
+          onClick={() => setIsMobileMenuOpen(false)} 
+          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 1045 }}
+        />
+      )}
+
       {/* Sidebar Layout */}
-      <div className="col-auto col-md-3 col-xl-2 px-sm-2 px-0 sidebar d-flex flex-column">
-        <div className="d-flex flex-column align-items-center align-items-sm-start px-3 pt-4 text-white min-vh-100 justify-content-between pb-4">
+      <div className={`sidebar d-flex flex-column ${isMobileMenuOpen ? 'sidebar-open' : ''}`}>
+        <div className="d-flex flex-column align-items-center align-items-md-start px-3 pt-4 text-white min-vh-100 justify-content-between pb-4">
           <div className="w-100">
             <a href="/" className="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none border-bottom border-secondary w-100">
               <div style={{ width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.4)', background: '#fff', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }} className="me-2">
@@ -1293,77 +1323,77 @@ function App() {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <span className="fs-5 d-none d-sm-inline font-weight-bold text-gradient">Copier Portal</span>
+              <span className="fs-5 d-inline font-weight-bold text-gradient">Copier Portal</span>
             </a>
-            <ul className="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100 mt-4" id="menu">
+            <ul className="nav nav-pills flex-column mb-auto align-items-center align-items-md-start w-100 mt-4" id="menu">
               <li className="w-100">
                 <button 
-                  onClick={() => setActiveTab('dashboard')} 
+                  onClick={() => handleNavClick('dashboard')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'dashboard' ? 'active' : ''}`}
                 >
                   <LayoutDashboard size={20} />
-                  <span className="ms-1 d-none d-sm-inline">ภาพรวมระบบ</span>
+                  <span className="ms-1 d-inline">ภาพรวมระบบ</span>
                 </button>
               </li>
               <li className="w-100">
                 <button 
-                  onClick={() => setActiveTab('users')} 
+                  onClick={() => handleNavClick('users')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'users' ? 'active' : ''}`}
                 >
                   <UserIcon size={20} />
-                  <span className="ms-1 d-none d-sm-inline">ข้อมูลรายบุคคล</span>
+                  <span className="ms-1 d-inline">ข้อมูลรายบุคคล</span>
                 </button>
               </li>
               <li className="w-100">
                 <button 
-                  onClick={() => setActiveTab('categories')} 
+                  onClick={() => handleNavClick('categories')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'categories' ? 'active' : ''}`}
                 >
                   <ChartIcon size={20} />
-                  <span className="ms-1 d-none d-sm-inline">แยกตามประเภท</span>
+                  <span className="ms-1 d-inline">แยกตามประเภท</span>
                 </button>
               </li>
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => setActiveTab('upload')} 
+                    onClick={() => handleNavClick('upload')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'upload' ? 'active' : ''}`}
                   >
                     <UploadCloud size={20} />
-                    <span className="ms-1 d-none d-sm-inline">นำเข้าข้อมูล</span>
+                    <span className="ms-1 d-inline">นำเข้าข้อมูล</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => setActiveTab('printers-inventory')} 
+                    onClick={() => handleNavClick('printers-inventory')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'printers-inventory' ? 'active' : ''}`}
                   >
                     <Printer size={20} />
-                    <span className="ms-1 d-none d-sm-inline">คลังเครื่องพิมพ์</span>
+                    <span className="ms-1 d-inline">คลังเครื่องพิมพ์</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => setActiveTab('manage-users')} 
+                    onClick={() => handleNavClick('manage-users')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'manage-users' ? 'active' : ''}`}
                   >
                     <Shield size={20} />
-                    <span className="ms-1 d-none d-sm-inline">จัดการผู้ใช้งาน</span>
+                    <span className="ms-1 d-inline">จัดการผู้ใช้งาน</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => setActiveTab('system-logs')} 
+                    onClick={() => handleNavClick('system-logs')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'system-logs' ? 'active' : ''}`}
                   >
                     <FileText size={20} />
-                    <span className="ms-1 d-none d-sm-inline">บันทึกเหตุการณ์ (Logs)</span>
+                    <span className="ms-1 d-inline">บันทึกเหตุการณ์ (Logs)</span>
                   </button>
                 </li>
               )}
@@ -1373,10 +1403,10 @@ function App() {
           {/* Security Controls Status (SC-3 Display) */}
           <div className="w-100 pt-3 border-top border-secondary">
             {userRole === 'admin' ? (
-              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-sm-start text-muted" style={{ fontSize: '0.8rem' }}>
+              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-md-start text-muted" style={{ fontSize: '0.8rem' }}>
                 <div className="d-flex align-items-center text-warning mb-1">
                   <Shield size={14} className="me-1" />
-                  <span className="d-none d-sm-inline fw-semibold text-warning">Privacy Mode (SC-3)</span>
+                  <span className="d-inline fw-semibold text-warning">Privacy Mode (SC-3)</span>
                 </div>
                 <div className="form-check form-switch p-0 m-0 d-flex align-items-center">
                   <input 
@@ -1387,25 +1417,25 @@ function App() {
                     checked={isMasked}
                     onChange={(e) => setIsMasked(e.target.checked)}
                   />
-                  <label className="form-check-label d-none d-sm-inline text-secondary cursor-pointer" htmlFor="maskSwitch">
+                  <label className="form-check-label d-inline text-secondary cursor-pointer" htmlFor="maskSwitch">
                     Mask User Data
                   </label>
                 </div>
               </div>
             ) : (
-              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-sm-start text-muted" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-md-start text-muted" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
                 <div className="d-flex align-items-center text-success mb-1">
                   <Shield size={14} className="me-1" />
-                  <span className="d-none d-sm-inline fw-semibold text-success">PDPA Masking Enabled</span>
+                  <span className="d-inline fw-semibold text-success">PDPA Masking Enabled</span>
                 </div>
-                <span className="text-secondary d-none d-sm-inline" style={{ fontSize: '0.75rem' }}>
+                <span className="text-secondary d-inline" style={{ fontSize: '0.75rem' }}>
                   ข้อมูลผู้ใช้งานถูกบังคับ Mask ตามนโยบายความปลอดภัย
                 </span>
               </div>
             )}
             
             {/* User Account Info & Logout Button */}
-            <div className="mt-3 text-center text-sm-start px-2">
+            <div className="mt-3 text-center text-md-start px-2">
               <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>ลงชื่อเข้าใช้: {usernameState} ({userRole === 'admin' ? 'Admin' : 'User'})</span>
               <button onClick={handleLogout} className="btn btn-sm btn-outline-light w-100 mt-2 py-1" style={{ fontSize: '0.8rem' }}>
                 ออกจากระบบ
@@ -1416,7 +1446,7 @@ function App() {
       </div>
 
       {/* Main Content Area */}
-      <div className="col py-4 px-4 overflow-auto animate-fade-in" style={{ maxHeight: '100vh' }}>
+      <div className="main-content flex-grow-1 py-4 px-3 px-md-4 overflow-auto animate-fade-in" style={{ maxHeight: '100vh' }}>
         
         {/* Global Alerts */}
         {alert && (
