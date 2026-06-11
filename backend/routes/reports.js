@@ -324,25 +324,35 @@ router.post('/upload', auth, adminOnly, upload.single('file'), async (req, res) 
 
       const reportId = reportResult.recordset[0].id;
 
-      for (const item of finalRowsToInsert) {
-        const detailRequest = new sql.Request(transaction);
-        detailRequest.input('report_id', sql.Int, reportId);
-        detailRequest.input('user_id', sql.NVarChar, item.userId);
-        detailRequest.input('name', sql.NVarChar, item.name);
-        detailRequest.input('print_bw', sql.Int, item.printBw);
-        detailRequest.input('print_color', sql.Int, item.printColor);
-        detailRequest.input('copy_bw', sql.Int, item.copyBw);
-        detailRequest.input('copy_color', sql.Int, item.copyColor);
-        detailRequest.input('scanner', sql.Int, item.scanner);
-        detailRequest.input('total_pages', sql.Int, item.totalPages);
-        detailRequest.input('cost', sql.Decimal(18, 2), item.cost);
+      if (finalRowsToInsert.length > 0) {
+        const valueRows = [];
+        const values = [];
+        let paramIndex = 1;
 
-        await detailRequest.query(`
+        for (const item of finalRowsToInsert) {
+          valueRows.push(`($${paramIndex}, $${paramIndex+1}, $${paramIndex+2}, $${paramIndex+3}, $${paramIndex+4}, $${paramIndex+5}, $${paramIndex+6}, $${paramIndex+7}, $${paramIndex+8}, $${paramIndex+9})`);
+          values.push(
+            reportId,
+            item.userId,
+            item.name,
+            item.printBw,
+            item.printColor,
+            item.copyBw,
+            item.copyColor,
+            item.scanner,
+            item.totalPages,
+            item.cost
+          );
+          paramIndex += 10;
+        }
+
+        const bulkQuery = `
           INSERT INTO UsageDetails 
           (report_id, user_id, name, print_bw, print_color, copy_bw, copy_color, scanner, total_pages, cost)
-          VALUES 
-          (@report_id, @user_id, @name, @print_bw, @print_color, @copy_bw, @copy_color, @scanner, @total_pages, @cost)
-        `);
+          VALUES ${valueRows.join(', ')}
+        `;
+
+        await transaction.client.query(bulkQuery, values);
       }
 
       await transaction.commit();

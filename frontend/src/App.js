@@ -185,6 +185,8 @@ function App() {
   // Loading & Alert states
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importProgress, setImportProgress] = useState(0);
 
   // Upload state
   const [uploadFile, setUploadFile] = useState(null);
@@ -465,7 +467,11 @@ function App() {
   };
 
   const showAlert = (type, message) => {
-    setAlert({ type, message });
+    let finalMsg = message;
+    if (message && typeof message === 'object') {
+      finalMsg = message.error || message.message || JSON.stringify(message);
+    }
+    setAlert({ type, message: String(finalMsg) });
     setTimeout(() => setAlert(null), 6000);
   };
 
@@ -494,15 +500,41 @@ function App() {
     }
 
     setLoading(true);
+    setIsImporting(true);
+    setImportProgress(0);
+
+    let progressInterval = setInterval(() => {
+      setImportProgress((prev) => {
+        if (prev >= 95) return 95;
+        const diff = 100 - prev;
+        const inc = Math.max(1, Math.round(diff * 0.1));
+        return Math.min(prev + inc, 95);
+      });
+    }, 200);
+
     try {
       const res = await axios.post(`${API_BASE}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setImportProgress((prev) => Math.max(prev, Math.round(percent * 0.3)));
+          }
+        }
       });
+      
+      clearInterval(progressInterval);
+      setImportProgress(100);
+      
+      // Delay slightly so the user sees 100% progress
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       showAlert('success', `นำเข้าข้อมูลสำเร็จ: ${res.data.message} (${res.data.recordsCount} รายการ)`);
       setUploadFile(null);
       setUploadPrinterName('');
       fetchGlobalData();
     } catch (err) {
+      clearInterval(progressInterval);
       console.error('Upload error:', err);
       if (err.response?.status === 409 && err.response?.data?.error === 'DUPLICATE_DETECTED') {
         const uConflict = {
@@ -525,6 +557,9 @@ function App() {
         showAlert('danger', msg);
       }
     } finally {
+      clearInterval(progressInterval);
+      setIsImporting(false);
+      setImportProgress(0);
       setLoading(false);
     }
   };
@@ -532,6 +567,18 @@ function App() {
   const handleConfirmForceUpload = async () => {
     if (!uploadConflict) return;
     setLoading(true);
+    setIsImporting(true);
+    setImportProgress(0);
+
+    let progressInterval = setInterval(() => {
+      setImportProgress((prev) => {
+        if (prev >= 95) return 95;
+        const diff = 100 - prev;
+        const inc = Math.max(1, Math.round(diff * 0.1));
+        return Math.min(prev + inc, 95);
+      });
+    }, 200);
+
     const { formData } = uploadConflict;
     try {
       // Append only the selected user IDs for import
@@ -539,8 +586,21 @@ function App() {
       formData.append('selected_user_ids', JSON.stringify(selectedUserIdsForImport));
 
       const res = await axios.post(`${API_BASE}/upload?force_import=true`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        headers: { 'Content-Type': 'multipart/form-data' },
+        onUploadProgress: (progressEvent) => {
+          if (progressEvent.total) {
+            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+            setImportProgress((prev) => Math.max(prev, Math.round(percent * 0.3)));
+          }
+        }
       });
+
+      clearInterval(progressInterval);
+      setImportProgress(100);
+      
+      // Delay slightly so the user sees 100% progress
+      await new Promise(resolve => setTimeout(resolve, 500));
+
       showAlert('success', `นำเข้าข้อมูลเรียบร้อยแล้ว: ${res.data.message} (${res.data.recordsCount} รายการ)`);
       setUploadFile(null);
       setUploadPrinterName('');
@@ -548,10 +608,14 @@ function App() {
       setSelectedUserIdsForImport([]);
       fetchGlobalData();
     } catch (err) {
+      clearInterval(progressInterval);
       console.error('Force upload error:', err);
       const msg = err.response?.data?.error || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล';
       showAlert('danger', msg);
     } finally {
+      clearInterval(progressInterval);
+      setIsImporting(false);
+      setImportProgress(0);
       setLoading(false);
     }
   };
@@ -1365,10 +1429,17 @@ function App() {
 
         {/* Global Loading Spinner */}
         {loading && (
-          <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
+          <div className="position-fixed top-0 end-0 p-3 d-flex align-items-center gap-2" style={{ zIndex: 9999 }}>
+            {isImporting ? (
+              <div className="glass-card py-2 px-3 d-flex align-items-center gap-2 animate-fade-in" style={{ background: 'rgba(20, 10, 15, 0.85)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 51, 102, 0.2)' }}>
+                <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
+                <span className="text-white fw-bold" style={{ fontSize: '0.85rem' }}>กำลังนำเข้า {importProgress}%</span>
+              </div>
+            ) : (
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            )}
           </div>
         )}
 
@@ -2154,13 +2225,39 @@ function App() {
                       </div>
                     </div>
 
-                    <button 
-                      type="submit" 
-                      className="btn btn-glass-primary w-100 py-2"
-                      disabled={loading}
-                    >
-                      {loading ? 'กำลังประมวลผลข้อมูลรายงาน...' : 'เริ่มกระบวนการนำเข้า (Import to Database)'}
-                    </button>
+                    {isImporting ? (
+                      <div className="mt-3 p-3 glass-card text-start animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                        <div className="d-flex justify-content-between align-items-center mb-2">
+                          <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
+                            {importProgress < 40 ? '📤 กำลังอัปโหลดไฟล์รายงาน...' : '⚙️ กำลังประมวลผลและนำเข้าฐานข้อมูล...'}
+                          </span>
+                          <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
+                        </div>
+                        <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                          <div 
+                            className="progress-bar progress-bar-striped progress-bar-animated" 
+                            role="progressbar" 
+                            style={{ 
+                              width: `${importProgress}%`, 
+                              transition: 'width 0.2s ease-in-out',
+                              background: 'linear-gradient(90deg, #ff3366, #ff0033)',
+                              borderRadius: '5px'
+                            }} 
+                            aria-valuenow={importProgress} 
+                            aria-valuemin="0" 
+                            aria-valuemax="100"
+                          ></div>
+                        </div>
+                      </div>
+                    ) : (
+                      <button 
+                        type="submit" 
+                        className="btn btn-glass-primary w-100 py-2"
+                        disabled={loading}
+                      >
+                        เริ่มกระบวนการนำเข้า (Import to Database)
+                      </button>
+                    )}
                   </form>
                 </div>
               </div>
@@ -2654,28 +2751,56 @@ function App() {
                     <strong>💡 เปลี่ยนชื่อไฟล์อัตโนมัติ:</strong> ระบบจะเปลี่ยนชื่อไฟล์นำเข้าจาก <code>{uploadConflict.filename}</code> เป็น <code>{uploadConflict.renamedFilename}</code> เพื่อระบุรอบงวดและไม่ให้ชื่อไฟล์ซ้ำซ้อน
                   </div>
                 )}
-                <div className="d-flex flex-column gap-2">
-                  <button 
-                    onClick={handleConfirmForceUpload} 
-                    className="btn btn-danger py-2 w-100 fw-bold"
-                  >
-                    ตกลงนำเข้า (เขียนทับทั้งหมด)
-                  </button>
-                  {hasDetails && (
-                    <button 
-                      onClick={() => setShowComparisonTable(true)} 
-                      className="btn btn-glass-primary py-2 w-100 fw-bold text-white"
-                      style={{ background: 'var(--accent-red)' }}
-                    >
-                      🔍 ตรวจสอบข้อมูลซ้ำ
-                    </button>
+                 <div className="d-flex flex-column gap-2">
+                  {isImporting ? (
+                    <div className="p-3 mt-2 glass-card text-start" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
+                      <div className="d-flex justify-content-between align-items-center mb-2">
+                        <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
+                          {importProgress < 40 ? '📤 กำลังอัปโหลดไฟล์...' : '⚙️ กำลังบันทึกทับข้อมูลเดิม...'}
+                        </span>
+                        <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
+                      </div>
+                      <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                        <div 
+                          className="progress-bar progress-bar-striped progress-bar-animated" 
+                          role="progressbar" 
+                          style={{ 
+                            width: `${importProgress}%`, 
+                            transition: 'width 0.2s ease-in-out',
+                            background: 'linear-gradient(90deg, #ff3366, #ff0033)',
+                            borderRadius: '5px'
+                          }} 
+                          aria-valuenow={importProgress} 
+                          aria-valuemin="0" 
+                          aria-valuemax="100"
+                        ></div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <button 
+                        onClick={handleConfirmForceUpload} 
+                        className="btn btn-danger py-2 w-100 fw-bold"
+                      >
+                        ตกลงนำเข้า (เขียนทับทั้งหมด)
+                      </button>
+                      {hasDetails && (
+                        <button 
+                          onClick={() => setShowComparisonTable(true)} 
+                          className="btn btn-glass-primary py-2 w-100 fw-bold text-white"
+                          style={{ background: 'var(--accent-red)' }}
+                        >
+                          🔍 ตรวจสอบข้อมูลซ้ำ
+                        </button>
+                      )}
+                      <button 
+                        onClick={handleCancelUpload} 
+                        className="btn btn-outline-secondary py-2 w-100"
+                      >
+                        ยกเลิก
+                      </button>
+                    </>
                   )}
-                  <button 
-                    onClick={handleCancelUpload} 
-                    className="btn btn-outline-secondary py-2 w-100"
-                  >
-                    ยกเลิก
-                  </button>
                 </div>
               </div>
             </div>
@@ -2903,26 +3028,54 @@ function App() {
                 </div>
               </div>
 
-              <div className="d-flex justify-content-center gap-3">
-                <button 
-                  onClick={handleConfirmForceUpload} 
-                  className="btn btn-danger py-2 px-4 fw-bold"
-                  disabled={selectedUserIdsForImport.length === 0}
-                >
-                  นำเข้าเฉพาะข้อมูลที่เลือก
-                </button>
-                <button 
-                  onClick={() => setShowComparisonTable(false)} 
-                  className="btn btn-outline-secondary py-2 px-4"
-                >
-                  ย้อนกลับ
-                </button>
-                <button 
-                  onClick={handleCancelUpload} 
-                  className="btn btn-outline-secondary py-2 px-4"
-                >
-                  ยกเลิก
-                </button>
+              <div className="d-flex justify-content-center w-100">
+                {isImporting ? (
+                  <div className="p-3 w-100 glass-card text-start" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', maxWidth: '500px' }}>
+                    <div className="d-flex justify-content-between align-items-center mb-2">
+                      <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
+                        {importProgress < 40 ? '📤 กำลังอัปโหลดข้อมูล...' : '⚙️ กำลังเขียนทับข้อมูลเฉพาะที่เลือก...'}
+                      </span>
+                      <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
+                    </div>
+                    <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
+                      <div 
+                        className="progress-bar progress-bar-striped progress-bar-animated" 
+                        role="progressbar" 
+                        style={{ 
+                          width: `${importProgress}%`, 
+                          transition: 'width 0.2s ease-in-out',
+                          background: 'linear-gradient(90deg, #ff3366, #ff0033)',
+                          borderRadius: '5px'
+                        }} 
+                        aria-valuenow={importProgress} 
+                        aria-valuemin="0" 
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="d-flex justify-content-center gap-3">
+                    <button 
+                      onClick={handleConfirmForceUpload} 
+                      className="btn btn-danger py-2 px-4 fw-bold"
+                      disabled={selectedUserIdsForImport.length === 0}
+                    >
+                      นำเข้าเฉพาะข้อมูลที่เลือก
+                    </button>
+                    <button 
+                      onClick={() => setShowComparisonTable(false)} 
+                      className="btn btn-outline-secondary py-2 px-4"
+                    >
+                      ย้อนกลับ
+                    </button>
+                    <button 
+                      onClick={handleCancelUpload} 
+                      className="btn btn-outline-secondary py-2 px-4"
+                    >
+                      ยกเลิก
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           </div>
