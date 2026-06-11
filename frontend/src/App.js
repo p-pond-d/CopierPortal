@@ -1177,7 +1177,6 @@ function App() {
               <input 
                 type="text" 
                 className="form-control form-glass" 
-                placeholder="เช่น admin, user"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
                 required
@@ -1209,10 +1208,6 @@ function App() {
               เข้าสู่ระบบ
             </button>
           </form>
-          
-          <div className="text-center mt-4 text-muted" style={{ fontSize: '0.8rem' }}>
-            รหัสเริ่มต้นสำหรับทุกบัญชีคือ <strong>123456</strong>
-          </div>
         </div>
       </div>
     );
