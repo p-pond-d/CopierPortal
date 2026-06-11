@@ -355,7 +355,10 @@ router.post('/upload', auth, adminOnly, upload.single('file'), async (req, res) 
 
       await transaction.commit();
       await rebuildMonthlySummaries(pool);
-      await logActivity(req.username, req.role, 'UPLOAD', `นำเข้าไฟล์รายงาน '${finalFilename}' ประจำงวด ${reportDateStr} (จำนวน ${finalRowsToInsert.length} รายการ, ยอดเงินรวม ${totalCost.toFixed(2)} บาท)`);
+      const importDetails = forceImport
+        ? `นำเข้าไฟล์รายงาน (เขียนทับ) '${finalFilename}' ประจำงวด ${reportDateStr} (จำนวน ${finalRowsToInsert.length} รายการ, ยอดเงินรวม ${totalCost.toFixed(2)} บาท)`
+        : `นำเข้าไฟล์รายงาน '${finalFilename}' ประจำงวด ${reportDateStr} (จำนวน ${finalRowsToInsert.length} รายการ, ยอดเงินรวม ${totalCost.toFixed(2)} บาท)`;
+      await logActivity(req.username, req.role, 'UPLOAD', importDetails);
       
       res.status(201).json({
         message: 'Report uploaded and imported successfully.',
@@ -582,6 +585,25 @@ router.get('/reports/export/details', auth, async (req, res) => {
         name: maskName(r.name)
       }));
     }
+
+    // Add backend logging for detailed report export
+    let actionDetails = `นำออกรายงานรายละเอียดผู้ใช้งานทั้งปี ${year}`;
+    let actionType = 'EXPORT_YEAR_DETAILS';
+    if (month) {
+      actionType = 'EXPORT_MONTH_DETAILS';
+      const thaiMonths = [
+        'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+        'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+      ];
+      const monthIndex = parseInt(month, 10) - 1;
+      const thMonth = thaiMonths[monthIndex] || month;
+      actionDetails = `นำออกรายงานรายละเอียดผู้ใช้งานประจำงวด ${thMonth} ${year}`;
+    }
+    if (printer) {
+      actionDetails += ` เฉพาะเครื่องพิมพ์ ${printer}`;
+    }
+    await logActivity(req.username, req.role, actionType, actionDetails);
+
     res.json(records);
   } catch (err) {
     console.error(err);

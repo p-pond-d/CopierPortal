@@ -772,16 +772,20 @@ function App() {
     window.XLSX.writeFile(wb, filename);
   };
 
-  const exportMonthlySummary = () => {
+  const exportMonthlySummary = async () => {
     if (summaryData.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
       return;
     }
 
-    axios.post(`${API_BASE}/logs`, {
-      action_type: 'EXPORT_SUMMARY',
-      action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary Excel)'
-    }).catch(err => console.error('Failed to log summary export:', err));
+    try {
+      await axios.post(`${API_BASE}/logs`, {
+        action_type: 'EXPORT_SUMMARY',
+        action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary Excel)'
+      });
+    } catch (err) {
+      console.error('Failed to log summary export:', err);
+    }
 
     const headers = [
       'ปี (ค.ศ.)',
@@ -832,7 +836,7 @@ function App() {
     showAlert('success', 'นำออกรายงานสถิติยอดการใช้งานรายเดือนสำเร็จ (Excel)');
   };
 
-  const exportUserHistory = () => {
+  const exportUserHistory = async () => {
     if (!selectedUser || userHistory.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
       return;
@@ -855,10 +859,14 @@ function App() {
     const uid = isMasked ? maskValue(selectedUser.user_id) : selectedUser.user_id;
     const name = isMasked ? maskValue(selectedUser.name) : selectedUser.name;
 
-    axios.post(`${API_BASE}/logs`, {
-      action_type: 'EXPORT_USER_HISTORY',
-      action_details: `นำออกประวัติการใช้งานของพนักงาน '${name}' (ID: ${uid})${userFilterPrinter ? ` เฉพาะเครื่องพิมพ์ '${userFilterPrinter}'` : ''}`
-    }).catch(err => console.error('Failed to log user history export:', err));
+    try {
+      await axios.post(`${API_BASE}/logs`, {
+        action_type: 'EXPORT_USER_HISTORY',
+        action_details: `นำออกประวัติการใช้งานของพนักงาน '${name}' (ID: ${uid})${userFilterPrinter ? ` เฉพาะเครื่องพิมพ์ '${userFilterPrinter}'` : ''}`
+      });
+    } catch (err) {
+      console.error('Failed to log user history export:', err);
+    }
 
     const rows = userHistory.map(h => [
       uid,
@@ -970,18 +978,8 @@ function App() {
       if (catFilterMonth) {
         const thMonth = new Date(`2026-${String(catFilterMonth).padStart(2, '0')}-02`).toLocaleDateString('th-TH', { month: 'long' });
         filename = `usage_details_${catFilterYear}_${thMonth}.xlsx`;
-        
-        axios.post(`${API_BASE}/logs`, {
-          action_type: 'EXPORT_MONTH_DETAILS',
-          action_details: `นำออกรายงานรายละเอียดผู้ใช้งานประจำงวด ${thMonth} ${catFilterYear}${selectedPrinter ? ` เฉพาะเครื่องพิมพ์ ${selectedPrinter}` : ''}`
-        }).catch(err => console.error('Failed to log monthly details export:', err));
       } else {
         filename = `usage_details_${catFilterYear}_all_months.xlsx`;
-        
-        axios.post(`${API_BASE}/logs`, {
-          action_type: 'EXPORT_YEAR_DETAILS',
-          action_details: `นำออกรายงานรายละเอียดผู้ใช้งานทั้งปี ${catFilterYear}${selectedPrinter ? ` เฉพาะเครื่องพิมพ์ ${selectedPrinter}` : ''}`
-        }).catch(err => console.error('Failed to log yearly details export:', err));
       }
 
       saveToExcel(headers, allRows, "Usage Details", filename);
