@@ -759,7 +759,19 @@ function App() {
     }
   };
 
-  // CSV Export helper functions
+  // Excel Export helper function using SheetJS (XLSX)
+  const saveToExcel = (headers, rows, sheetName, filename) => {
+    if (!window.XLSX) {
+      showAlert('danger', 'ไม่พบไลบรารีสำหรับสร้างไฟล์ Excel กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
+      return;
+    }
+    const data = [headers, ...rows];
+    const ws = window.XLSX.utils.aoa_to_sheet(data);
+    const wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    window.XLSX.writeFile(wb, filename);
+  };
+
   const exportMonthlySummary = () => {
     if (summaryData.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
@@ -768,7 +780,7 @@ function App() {
 
     axios.post(`${API_BASE}/logs`, {
       action_type: 'EXPORT_SUMMARY',
-      action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary CSV)'
+      action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary Excel)'
     }).catch(err => console.error('Failed to log summary export:', err));
 
     const headers = [
@@ -816,19 +828,8 @@ function App() {
 
     const allRows = [...rows, ...footerRows];
 
-    const csvContent = "\uFEFF" + [
-      headers.join(','),
-      ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `monthly_summary_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveToExcel(headers, allRows, "Monthly Summary", `monthly_summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showAlert('success', 'นำออกรายงานสถิติยอดการใช้งานรายเดือนสำเร็จ (Excel)');
   };
 
   const exportUserHistory = () => {
@@ -891,19 +892,8 @@ function App() {
 
     const allRows = [...rows, ...footerRows];
 
-    const csvContent = "\uFEFF" + [
-      headers.join(','),
-      ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `user_usage_${selectedUser.user_id}_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    saveToExcel(headers, allRows, "User History", `user_usage_${selectedUser.user_id}_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    showAlert('success', `นำออกรายงานประวัติสำเร็จ: ${selectedUser.name} (Excel)`);
   };
 
   const exportSelectedMonthDetails = async () => {
@@ -976,26 +966,17 @@ function App() {
 
       const allRows = [...rows, ...footerRows];
 
-      const csvContent = "\uFEFF" + [
-        headers.join(','),
-        ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
-      ].join('\n');
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-
       let filename = '';
       if (catFilterMonth) {
         const thMonth = new Date(`2026-${String(catFilterMonth).padStart(2, '0')}-02`).toLocaleDateString('th-TH', { month: 'long' });
-        filename = `usage_details_${catFilterYear}_${thMonth}.csv`;
+        filename = `usage_details_${catFilterYear}_${thMonth}.xlsx`;
         
         axios.post(`${API_BASE}/logs`, {
           action_type: 'EXPORT_MONTH_DETAILS',
           action_details: `นำออกรายงานรายละเอียดผู้ใช้งานประจำงวด ${thMonth} ${catFilterYear}${selectedPrinter ? ` เฉพาะเครื่องพิมพ์ ${selectedPrinter}` : ''}`
         }).catch(err => console.error('Failed to log monthly details export:', err));
       } else {
-        filename = `usage_details_${catFilterYear}_all_months.csv`;
+        filename = `usage_details_${catFilterYear}_all_months.xlsx`;
         
         axios.post(`${API_BASE}/logs`, {
           action_type: 'EXPORT_YEAR_DETAILS',
@@ -1003,11 +984,7 @@ function App() {
         }).catch(err => console.error('Failed to log yearly details export:', err));
       }
 
-      link.setAttribute('href', url);
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      saveToExcel(headers, allRows, "Usage Details", filename);
       showAlert('success', `นำออกรายงานรายละเอียดสำเร็จ: ${filename}`);
     } catch (err) {
       console.error('Error exporting details:', err);
@@ -1631,7 +1608,7 @@ function App() {
               <div className="d-flex justify-content-between align-items-center mb-3">
                 <h5 className="fw-bold mb-0">สรุปสถิติตามรายเดือน</h5>
                 <button onClick={exportMonthlySummary} className="btn btn-sm btn-glass-primary">
-                  นำออกรายงาน (Export CSV)
+                  นำออกรายงาน (Export Excel)
                 </button>
               </div>
               <div className="table-responsive">
@@ -1819,7 +1796,7 @@ function App() {
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold mb-0 text-muted">รายละเอียดประวัติแต่ละงวดการนำเข้า</h6>
                         <button onClick={exportUserHistory} className="btn btn-sm btn-glass-primary py-1 px-2" style={{ fontSize: '0.8rem' }}>
-                          นำออกรายงาน (Export CSV)
+                          นำออกรายงาน (Export Excel)
                         </button>
                       </div>
                       <div className="table-responsive">
@@ -1961,7 +1938,7 @@ function App() {
                     className="btn btn-glass-primary w-100"
                     disabled={!catFilterYear}
                   >
-                    นำออก (CSV)
+                    นำออก (Excel)
                   </button>
                 </div>
               </div>
