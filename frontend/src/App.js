@@ -49,7 +49,9 @@ ChartJS.register(
   Filler
 );
 
-const API_BASE = `http://${window.location.hostname}:5000/api`;
+const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? `http://${window.location.hostname}:5000/api`
+  : '/api';
 
 // Setup Axios Interceptor to automatically add Authorization header
 axios.interceptors.request.use(
