@@ -1011,7 +1011,10 @@ function App() {
       showAlert('success', `นำออกรายงานรายละเอียดสำเร็จ: ${filename}`);
     } catch (err) {
       console.error('Error exporting details:', err);
-      showAlert('danger', 'เกิดข้อผิดพลาดในการนำออกรายงานรายละเอียดการใช้งาน');
+      const serverErr = err.response && err.response.data && err.response.data.error 
+        ? err.response.data.error 
+        : err.message;
+      showAlert('danger', `เกิดข้อผิดพลาดในการนำออกรายงาน: ${serverErr}`);
     } finally {
       setLoading(false);
     }
