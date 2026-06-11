@@ -715,11 +715,11 @@ router.get('/reports/export/details', auth, async (req, res) => {
     `;
 
     if (year) {
-      request.input('year', sql.Int, year);
+      request.input('year', sql.Int, parseInt(year, 10));
       query += ` AND YEAR(r.report_date) = @year`;
     }
     if (month) {
-      request.input('month', sql.Int, month);
+      request.input('month', sql.Int, parseInt(month, 10));
       query += ` AND MONTH(r.report_date) = @month`;
     }
     if (printer) {
