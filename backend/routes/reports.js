@@ -74,51 +74,49 @@ router.post('/upload', auth, adminOnly, upload.single('file'), async (req, res) 
     }
 
     // Match Printer page count columns (with generic print fallbacks, ignoring copier)
-    const pbKey = Object.keys(rawRows[0]).find(h => {
+    let pbKeyFinal = Object.keys(rawRows[0]).find(h => {
       const hl = h.trim().toLowerCase();
-      return hl.includes('printer') && (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b'));
+      if (hl.includes('copier') || hl.includes('copy') || hl.includes('document') || hl.includes('scan')) return false;
+      return (hl.includes('printer') || hl.includes('print')) && 
+             (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b') || hl.includes('mono') || hl.includes('b-w'));
+    }) || Object.keys(rawRows[0]).find(h => {
+      const hl = h.trim().toLowerCase();
+      if (hl.includes('copier') || hl.includes('copy') || hl.includes('document') || hl.includes('scan')) return false;
+      return hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b') || hl.includes('mono') || hl.includes('b-w');
     });
 
-    let pbKeyFinal = pbKey;
-    if (!pbKeyFinal) {
-      pbKeyFinal = Object.keys(rawRows[0]).find(h => {
-        const hl = h.trim().toLowerCase();
-        if (hl.includes('copier') || hl.includes('document')) return false;
-        return (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b')) && hl.includes('print');
-      }) || Object.keys(rawRows[0]).find(h => {
-        const hl = h.trim().toLowerCase();
-        if (hl.includes('copier') || hl.includes('document')) return false;
-        return (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b'));
-      });
-    }
-
-    const pcKey = Object.keys(rawRows[0]).find(h => {
+    let pcKeyFinal = Object.keys(rawRows[0]).find(h => {
       const hl = h.trim().toLowerCase();
-      return hl.includes('printer') && hl.includes('color');
+      if (hl.includes('copier') || hl.includes('copy') || hl.includes('document') || hl.includes('scan')) return false;
+      return (hl.includes('printer') || hl.includes('print')) && 
+             (hl.includes('color') || hl.includes('colour'));
+    }) || Object.keys(rawRows[0]).find(h => {
+      const hl = h.trim().toLowerCase();
+      if (hl.includes('copier') || hl.includes('copy') || hl.includes('document') || hl.includes('scan')) return false;
+      return hl.includes('color') || hl.includes('colour');
     });
-
-    let pcKeyFinal = pcKey;
-    if (!pcKeyFinal) {
-      pcKeyFinal = Object.keys(rawRows[0]).find(h => {
-        const hl = h.trim().toLowerCase();
-        if (hl.includes('copier') || hl.includes('document')) return false;
-        return hl.includes('color') && hl.includes('print');
-      }) || Object.keys(rawRows[0]).find(h => {
-        const hl = h.trim().toLowerCase();
-        if (hl.includes('copier') || hl.includes('document')) return false;
-        return hl.includes('color');
-      });
-    }
 
     // Match Copier page count columns
     const cbKey = Object.keys(rawRows[0]).find(h => {
       const hl = h.trim().toLowerCase();
-      return (hl.includes('copier') || hl.includes('document')) && (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b'));
+      if (hl.includes('printer') || hl.includes('print') || hl.includes('scan')) return false;
+      return (hl.includes('copier') || hl.includes('copy') || hl.includes('document')) && 
+             (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b') || hl.includes('mono') || hl.includes('b-w'));
+    }) || Object.keys(rawRows[0]).find(h => {
+      const hl = h.trim().toLowerCase();
+      return (hl.includes('copier') || hl.includes('copy') || hl.includes('document')) && 
+             (hl.includes('black') || hl.includes('b&w') || hl.includes('b/w') || hl.includes('bw') || hl.includes('w/b') || hl.includes('mono') || hl.includes('b-w'));
     });
 
     const ccKey = Object.keys(rawRows[0]).find(h => {
       const hl = h.trim().toLowerCase();
-      return (hl.includes('copier') || hl.includes('document')) && (hl.includes('color') || hl.includes('full'));
+      if (hl.includes('printer') || hl.includes('print') || hl.includes('scan')) return false;
+      return (hl.includes('copier') || hl.includes('copy') || hl.includes('document')) && 
+             (hl.includes('color') || hl.includes('colour') || hl.includes('full'));
+    }) || Object.keys(rawRows[0]).find(h => {
+      const hl = h.trim().toLowerCase();
+      return (hl.includes('copier') || hl.includes('copy') || hl.includes('document')) && 
+             (hl.includes('color') || hl.includes('colour') || hl.includes('full'));
     });
 
     // Match Scanner page count column
