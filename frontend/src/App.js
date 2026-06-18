@@ -217,11 +217,14 @@ function App() {
   const [editingUserId, setEditingUserId] = useState(null);
 
   // System activity logging states
+  // eslint-disable-next-line no-unused-vars
   const [systemLogs, setSystemLogs] = useState([]);
   const [logFilterUser, setLogFilterUser] = useState('');
   const [logFilterType, setLogFilterType] = useState('');
   const [logPage, setLogPage] = useState(1);
+  // eslint-disable-next-line no-unused-vars
   const [logTotalPages, setLogTotalPages] = useState(1);
+  // eslint-disable-next-line no-unused-vars
   const [logTotalCount, setLogTotalCount] = useState(0);
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -333,6 +336,7 @@ function App() {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleInventoryFormSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -357,6 +361,7 @@ function App() {
     }
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleEditInventoryPrinter = (printer) => {
     setEditingInventoryId(printer.id);
     setInventoryForm({
@@ -366,6 +371,7 @@ function App() {
     });
   };
 
+  // eslint-disable-next-line no-unused-vars
   const handleDeleteInventoryPrinter = async (id, name) => {
     if (!window.confirm(`คุณต้องการลบเครื่องพิมพ์ ${name} ออกจากคลังใช่หรือไม่?`)) {
       return;
