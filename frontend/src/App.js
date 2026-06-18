@@ -19,7 +19,8 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Info
+  Info,
+  TrendingUp
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -1016,6 +1017,70 @@ function App() {
   const totalPagesAllTime = summaryData.reduce((sum, item) => sum + item.total_pages, 0);
   const totalUsersActive = users.length;
 
+  // Yearly YoY aggregation from summaryData
+  const yearlyAggregated = (() => {
+    const map = {};
+    summaryData.forEach(item => {
+      const y = item.year;
+      if (!map[y]) map[y] = { year: y, total_cost: 0, total_pages: 0, total_users: 0 };
+      map[y].total_cost += item.total_cost || 0;
+      map[y].total_pages += item.total_pages || 0;
+      map[y].total_users = Math.max(map[y].total_users, item.total_users || 0);
+    });
+    return Object.values(map).sort((a, b) => a.year - b.year);
+  })();
+
+  const yearlyChartData = yearlyAggregated.length > 0 ? {
+    labels: yearlyAggregated.map(item => `ปี ${item.year}`),
+    datasets: [
+      {
+        type: 'bar',
+        label: 'ค่าใช้จ่ายรวม (บาท)',
+        data: yearlyAggregated.map(item => item.total_cost),
+        backgroundColor: yearlyAggregated.map((_, i) =>
+          ['rgba(200,35,51,0.7)', 'rgba(59,130,246,0.7)', 'rgba(16,185,129,0.7)', 'rgba(245,158,11,0.7)', 'rgba(139,92,246,0.7)'][i % 5]
+        ),
+        borderColor: yearlyAggregated.map((_, i) =>
+          ['#c82333', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'][i % 5]
+        ),
+        borderWidth: 2,
+        yAxisID: 'y1',
+      },
+      {
+        type: 'line',
+        label: 'จำนวนแผ่นรวม (แผ่น)',
+        data: yearlyAggregated.map(item => item.total_pages),
+        borderColor: '#8b5cf6',
+        backgroundColor: 'rgba(139,92,246,0.15)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 6,
+        pointBackgroundColor: '#8b5cf6',
+        yAxisID: 'y2',
+      }
+    ]
+  } : null;
+
+  const yearlyChartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    scales: {
+      x: { grid: { color: 'rgba(0,0,0,0.05)' }, ticks: { color: '#475569' } },
+      y1: {
+        type: 'linear', display: true, position: 'left',
+        grid: { color: 'rgba(0,0,0,0.05)' },
+        ticks: { color: '#c82333', callback: v => v.toLocaleString('th-TH') }
+      },
+      y2: {
+        type: 'linear', display: true, position: 'right',
+        grid: { drawOnChartArea: false },
+        ticks: { color: '#8b5cf6', callback: v => v.toLocaleString('th-TH') }
+      }
+    },
+    plugins: { legend: { labels: { color: '#475569' } } }
+  };
+
   // Chart configs
   const trendChartData = {
     labels: [...summaryData].reverse().map(item => `${item.month}/${item.year}`),
@@ -1583,6 +1648,58 @@ function App() {
                 </div>
               </div>
             </div>
+
+            {/* Yearly YoY Comparison Chart */}
+            {yearlyChartData && (
+              <div className="glass-card mb-4">
+                <h5 className="fw-bold mb-4 d-flex align-items-center">
+                  <TrendingUp size={18} className="text-success me-2" />
+                  แนวโน้มการใช้งานรายปี (Year-over-Year Comparison)
+                </h5>
+                <div className="row g-4 align-items-center">
+                  <div className="col-12 col-lg-8">
+                    <div style={{ height: '260px' }}>
+                      <Bar data={yearlyChartData} options={yearlyChartOptions} />
+                    </div>
+                  </div>
+                  <div className="col-12 col-lg-4">
+                    <div className="table-responsive">
+                      <table className="table table-glass mb-0">
+                        <thead>
+                          <tr>
+                            <th>ปี (ค.ศ.)</th>
+                            <th className="text-end">แผ่นรวม</th>
+                            <th className="text-end">ค่าบริการ (บาท)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {yearlyAggregated.map(item => {
+                            const prevYear = yearlyAggregated.find(y => y.year === item.year - 1);
+                            const diff = prevYear ? item.total_cost - prevYear.total_cost : null;
+                            return (
+                              <tr key={item.year}>
+                                <td className="fw-bold text-white">ปี {item.year}</td>
+                                <td className="text-end text-muted">{(item.total_pages || 0).toLocaleString()}</td>
+                                <td className="text-end">
+                                  <span className="fw-bold text-gradient-green d-block">
+                                    {(item.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                                  </span>
+                                  {diff !== null && (
+                                    <span style={{ fontSize: '0.75rem' }} className={diff >= 0 ? 'text-danger' : 'text-success'}>
+                                      {diff >= 0 ? '▲' : '▼'} {Math.abs(diff).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                                    </span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* General monthly table list */}
             <div className="glass-card">
