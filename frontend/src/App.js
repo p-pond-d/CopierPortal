@@ -336,7 +336,6 @@ function App() {
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleInventoryFormSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -361,7 +360,6 @@ function App() {
     }
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleEditInventoryPrinter = (printer) => {
     setEditingInventoryId(printer.id);
     setInventoryForm({
@@ -371,7 +369,6 @@ function App() {
     });
   };
 
-  // eslint-disable-next-line no-unused-vars
   const handleDeleteInventoryPrinter = async (id, name) => {
     if (!window.confirm(`คุณต้องการลบเครื่องพิมพ์ ${name} ออกจากคลังใช่หรือไม่?`)) {
       return;
@@ -2258,6 +2255,123 @@ function App() {
                         {reports.length === 0 && (
                           <tr>
                             <td colSpan="4" className="text-center text-muted py-4">ยังไม่พบรายงานนำเข้าในระบบ</td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'printers-inventory' && userRole === 'admin' && (
+          <div className="animate-fade-in">
+            <div className="d-flex justify-content-between align-items-center mb-4">
+              <div>
+                <h2 className="fw-bold mb-0">คลังเครื่องพิมพ์ (Printers Inventory)</h2>
+                <p className="text-muted mb-0">จัดการข้อมูลเครื่องพิมพ์ในระบบ เพิ่ม แก้ไข หรือลบ</p>
+              </div>
+            </div>
+
+            <div className="row g-4">
+              <div className="col-12 col-lg-4">
+                <div className="glass-card">
+                  <h5 className="fw-bold mb-4 d-flex align-items-center">
+                    <Printer size={18} className="text-primary me-2" />
+                    {editingInventoryId ? 'แก้ไขข้อมูลเครื่องพิมพ์' : 'เพิ่มเครื่องพิมพ์ใหม่'}
+                  </h5>
+                  <form onSubmit={handleInventoryFormSubmit}>
+                    <div className="mb-3">
+                      <label className="text-muted mb-1">ชื่อเครื่องพิมพ์ (Printer Name)</label>
+                      <input
+                        type="text"
+                        className="form-control form-glass"
+                        placeholder="เช่น Copier Floor 1"
+                        value={inventoryForm.printer_name}
+                        onChange={(e) => setInventoryForm({ ...inventoryForm, printer_name: e.target.value })}
+                        required
+                      />
+                    </div>
+                    <div className="mb-3">
+                      <label className="text-muted mb-1">หมายเลขซีเรียล (Serial Number)</label>
+                      <input
+                        type="text"
+                        className="form-control form-glass"
+                        placeholder="เช่น S/N 123456789"
+                        value={inventoryForm.serial_number}
+                        onChange={(e) => setInventoryForm({ ...inventoryForm, serial_number: e.target.value })}
+                      />
+                    </div>
+                    <div className="mb-4">
+                      <label className="text-muted mb-1">สถานที่ตั้ง (Location)</label>
+                      <input
+                        type="text"
+                        className="form-control form-glass"
+                        placeholder="เช่น ชั้น 1 อาคาร A"
+                        value={inventoryForm.location}
+                        onChange={(e) => setInventoryForm({ ...inventoryForm, location: e.target.value })}
+                      />
+                    </div>
+                    <div className="d-flex gap-2">
+                      <button type="submit" className="btn btn-glass-primary w-100 py-2" disabled={loading}>
+                        {editingInventoryId ? 'บันทึกการแก้ไข' : 'เพิ่มเครื่องพิมพ์'}
+                      </button>
+                      {editingInventoryId && (
+                        <button
+                          type="button"
+                          onClick={() => { setEditingInventoryId(null); setInventoryForm({ printer_name: '', serial_number: '', location: '' }); }}
+                          className="btn btn-outline-secondary form-glass py-2"
+                        >
+                          ยกเลิก
+                        </button>
+                      )}
+                    </div>
+                  </form>
+                </div>
+              </div>
+
+              <div className="col-12 col-lg-8">
+                <div className="glass-card">
+                  <h5 className="fw-bold mb-4">รายการเครื่องพิมพ์ในคลัง ({inventoryPrinters.length} เครื่อง)</h5>
+                  <div className="table-responsive">
+                    <table className="table table-glass">
+                      <thead>
+                        <tr>
+                          <th>ชื่อเครื่องพิมพ์</th>
+                          <th>หมายเลขซีเรียล</th>
+                          <th>สถานที่ตั้ง</th>
+                          <th className="text-center">การจัดการ</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {inventoryPrinters.map((printer) => (
+                          <tr key={printer.id}>
+                            <td className="text-white fw-semibold">{printer.printer_name}</td>
+                            <td className="text-muted">{printer.serial_number || '-'}</td>
+                            <td className="text-muted">{printer.location || '-'}</td>
+                            <td className="text-center">
+                              <button
+                                onClick={() => handleEditInventoryPrinter(printer)}
+                                className="btn btn-sm btn-glass-primary py-1 px-2 me-2"
+                                title="แก้ไขข้อมูล"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteInventoryPrinter(printer.id, printer.printer_name)}
+                                className="btn btn-sm btn-glass-danger py-1 px-2"
+                                title="ลบเครื่องพิมพ์"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                        {inventoryPrinters.length === 0 && (
+                          <tr>
+                            <td colSpan="4" className="text-center text-muted py-4">ยังไม่มีข้อมูลเครื่องพิมพ์ในคลัง</td>
                           </tr>
                         )}
                       </tbody>
