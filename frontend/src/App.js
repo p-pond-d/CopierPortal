@@ -236,8 +236,6 @@ function App() {
   const [selectedUserIdsForImport, setSelectedUserIdsForImport] = useState([]);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
 
-  // Presentation Slide states
-  const [aboutSlideTab, setAboutSlideTab] = useState(1);
 
   useEffect(() => {
     const handler = setTimeout(() => {
