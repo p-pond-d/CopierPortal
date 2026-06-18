@@ -19,8 +19,6 @@ import {
   ChevronRight,
   Eye,
   EyeOff,
-  Menu,
-  X,
   Info
 } from 'lucide-react';
 import {
@@ -52,9 +50,7 @@ ChartJS.register(
   Filler
 );
 
-const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-  ? `http://${window.location.hostname}:5000/api`
-  : '/api';
+const API_BASE = `http://${window.location.hostname}:5000/api`;
 
 // Setup Axios Interceptor to automatically add Authorization header
 axios.interceptors.request.use(
@@ -115,7 +111,7 @@ const stackedTotalsPlugin = {
         if (meta.hidden) return;
         
         const stackName = dataset.stack || 'default';
-        const val = Number(dataset.data[index]) || 0;
+        const val = dataset.data[index] || 0;
         
         if (!stacks[stackName]) {
           stacks[stackName] = {
@@ -188,14 +184,6 @@ function App() {
   // Loading & Alert states
   const [loading, setLoading] = useState(false);
   const [alert, setAlert] = useState(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [importProgress, setImportProgress] = useState(0);
-
-  // Report details preview state
-  const [previewReport, setPreviewReport] = useState(null);
-  const [previewDetails, setPreviewDetails] = useState([]);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewSearch, setPreviewSearch] = useState('');
 
   // Upload state
   const [uploadFile, setUploadFile] = useState(null);
@@ -240,16 +228,15 @@ function App() {
   const [inventoryPrinters, setInventoryPrinters] = useState([]);
   const [inventoryForm, setInventoryForm] = useState({ printer_name: '', serial_number: '', location: '' });
   const [editingInventoryId, setEditingInventoryId] = useState(null);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [chartMode, setChartMode] = useState('trend'); // 'trend' or 'compare'
-  const [compareMetric, setCompareMetric] = useState('pages'); // 'pages' or 'cost'
-  const [aboutSlideTab, setAboutSlideTab] = useState(1);
 
   // Upload conflict warning modal state
   const [uploadConflict, setUploadConflict] = useState(null); // { filename, reportDate, printerName, conflictDetails, conflictType, fileToUpload }
   const [uploadPrinterName, setUploadPrinterName] = useState('');
   const [selectedUserIdsForImport, setSelectedUserIdsForImport] = useState([]);
   const [showComparisonTable, setShowComparisonTable] = useState(false);
+
+  // Presentation Slide states
+  const [aboutSlideTab, setAboutSlideTab] = useState(1);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -274,7 +261,7 @@ function App() {
       }
     }
   }, [activeTab, userRole]);
-
+  
   // Fetch helper
   const fetchGlobalData = async (printer = selectedPrinter) => {
     setLoading(true);
@@ -480,11 +467,7 @@ function App() {
   };
 
   const showAlert = (type, message) => {
-    let finalMsg = message;
-    if (message && typeof message === 'object') {
-      finalMsg = message.error || message.message || JSON.stringify(message);
-    }
-    setAlert({ type, message: String(finalMsg) });
+    setAlert({ type, message });
     setTimeout(() => setAlert(null), 6000);
   };
 
@@ -513,41 +496,15 @@ function App() {
     }
 
     setLoading(true);
-    setIsImporting(true);
-    setImportProgress(0);
-
-    let progressInterval = setInterval(() => {
-      setImportProgress((prev) => {
-        if (prev >= 95) return 95;
-        const diff = 100 - prev;
-        const inc = Math.max(1, Math.round(diff * 0.1));
-        return Math.min(prev + inc, 95);
-      });
-    }, 200);
-
     try {
       const res = await axios.post(`${API_BASE}/upload`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setImportProgress((prev) => Math.max(prev, Math.round(percent * 0.3)));
-          }
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-      
-      clearInterval(progressInterval);
-      setImportProgress(100);
-      
-      // Delay slightly so the user sees 100% progress
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       showAlert('success', `นำเข้าข้อมูลสำเร็จ: ${res.data.message} (${res.data.recordsCount} รายการ)`);
       setUploadFile(null);
       setUploadPrinterName('');
       fetchGlobalData();
     } catch (err) {
-      clearInterval(progressInterval);
       console.error('Upload error:', err);
       if (err.response?.status === 409 && err.response?.data?.error === 'DUPLICATE_DETECTED') {
         const uConflict = {
@@ -570,9 +527,6 @@ function App() {
         showAlert('danger', msg);
       }
     } finally {
-      clearInterval(progressInterval);
-      setIsImporting(false);
-      setImportProgress(0);
       setLoading(false);
     }
   };
@@ -580,18 +534,6 @@ function App() {
   const handleConfirmForceUpload = async () => {
     if (!uploadConflict) return;
     setLoading(true);
-    setIsImporting(true);
-    setImportProgress(0);
-
-    let progressInterval = setInterval(() => {
-      setImportProgress((prev) => {
-        if (prev >= 95) return 95;
-        const diff = 100 - prev;
-        const inc = Math.max(1, Math.round(diff * 0.1));
-        return Math.min(prev + inc, 95);
-      });
-    }, 200);
-
     const { formData } = uploadConflict;
     try {
       // Append only the selected user IDs for import
@@ -599,21 +541,8 @@ function App() {
       formData.append('selected_user_ids', JSON.stringify(selectedUserIdsForImport));
 
       const res = await axios.post(`${API_BASE}/upload?force_import=true`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total) {
-            const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            setImportProgress((prev) => Math.max(prev, Math.round(percent * 0.3)));
-          }
-        }
+        headers: { 'Content-Type': 'multipart/form-data' }
       });
-
-      clearInterval(progressInterval);
-      setImportProgress(100);
-      
-      // Delay slightly so the user sees 100% progress
-      await new Promise(resolve => setTimeout(resolve, 500));
-
       showAlert('success', `นำเข้าข้อมูลเรียบร้อยแล้ว: ${res.data.message} (${res.data.recordsCount} รายการ)`);
       setUploadFile(null);
       setUploadPrinterName('');
@@ -621,14 +550,10 @@ function App() {
       setSelectedUserIdsForImport([]);
       fetchGlobalData();
     } catch (err) {
-      clearInterval(progressInterval);
       console.error('Force upload error:', err);
       const msg = err.response?.data?.error || 'เกิดข้อผิดพลาดในการนำเข้าข้อมูล';
       showAlert('danger', msg);
     } finally {
-      clearInterval(progressInterval);
-      setIsImporting(false);
-      setImportProgress(0);
       setLoading(false);
     }
   };
@@ -637,21 +562,6 @@ function App() {
     setUploadConflict(null);
     setSelectedUserIdsForImport([]);
     setShowComparisonTable(false);
-  };
-
-  const handlePreviewReport = async (rep) => {
-    setPreviewReport(rep);
-    setPreviewLoading(true);
-    try {
-      const res = await axios.get(`${API_BASE}/reports/${rep.id}/details`);
-      setPreviewDetails(res.data);
-    } catch (err) {
-      console.error('Error fetching report details for preview:', err);
-      showAlert('danger', 'ไม่สามารถดึงข้อมูลรายละเอียดรายงานสำหรับพรีวิวได้');
-      setPreviewReport(null);
-    } finally {
-      setPreviewLoading(false);
-    }
   };
 
   const handleDeleteReport = async (id) => {
@@ -766,33 +676,17 @@ function App() {
     }
   };
 
-  // Excel Export helper function using SheetJS (XLSX)
-  const saveToExcel = (headers, rows, sheetName, filename) => {
-    if (!window.XLSX) {
-      showAlert('danger', 'ไม่พบไลบรารีสำหรับสร้างไฟล์ Excel กรุณาตรวจสอบการเชื่อมต่ออินเทอร์เน็ต');
-      return;
-    }
-    const data = [headers, ...rows];
-    const ws = window.XLSX.utils.aoa_to_sheet(data);
-    const wb = window.XLSX.utils.book_new();
-    window.XLSX.utils.book_append_sheet(wb, ws, sheetName);
-    window.XLSX.writeFile(wb, filename);
-  };
-
-  const exportMonthlySummary = async () => {
+  // CSV Export helper functions
+  const exportMonthlySummary = () => {
     if (summaryData.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
       return;
     }
 
-    try {
-      await axios.post(`${API_BASE}/logs`, {
-        action_type: 'EXPORT_SUMMARY',
-        action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary Excel)'
-      });
-    } catch (err) {
-      console.error('Failed to log summary export:', err);
-    }
+    axios.post(`${API_BASE}/logs`, {
+      action_type: 'EXPORT_SUMMARY',
+      action_details: 'นำออกรายงานสถิติยอดการใช้งานเครื่องถ่ายเอกสารรายเดือนทั้งหมด (Export Monthly Summary CSV)'
+    }).catch(err => console.error('Failed to log summary export:', err));
 
     const headers = [
       'ปี (ค.ศ.)',
@@ -839,78 +733,22 @@ function App() {
 
     const allRows = [...rows, ...footerRows];
 
-    saveToExcel(headers, allRows, "Monthly Summary", `monthly_summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showAlert('success', 'นำออกรายงานสถิติยอดการใช้งานรายเดือนสำเร็จ (Excel)');
+    const csvContent = "\uFEFF" + [
+      headers.join(','),
+      ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `monthly_summary_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
-
-  const exportYearlySummary = async () => {
-    if (yearlySummary.length === 0) {
-      showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
-      return;
-    }
-
-    try {
-      await axios.post(`${API_BASE}/logs`, {
-        action_type: 'EXPORT_YEARLY_SUMMARY',
-        action_details: 'นำออกรายงานเปรียบเทียบสถิติรายปี (Export Yearly Summary Excel)'
-      });
-    } catch (err) {
-      console.error('Failed to log yearly export:', err);
-    }
-
-    const headers = [
-      'ปี (พ.ศ.)',
-      'ปี (ค.ศ.)',
-      'จำนวนเดือนที่มีข้อมูล',
-      'Print B&W (แผ่น)',
-      'Print Color (แผ่น)',
-      'Copy B&W (แผ่น)',
-      'Copy Color (แผ่น)',
-      'Scanner (แผ่น)',
-      'รวมหน้า (แผ่น)',
-      'รวมค่าบริการ (บาท)',
-      'อัตราการเติบโตจำนวนแผ่น (YoY %)',
-      'อัตราการเติบโตค่าใช้จ่าย (YoY %)'
-    ];
-
-    const rows = yearlySummary.map(sum => [
-      sum.year + 543,
-      sum.year,
-      `${sum.months_count} เดือน`,
-      sum.print_bw || 0,
-      sum.print_color || 0,
-      sum.copy_bw || 0,
-      sum.copy_color || 0,
-      sum.scanner || 0,
-      sum.total_pages || 0,
-      sum.total_cost || 0,
-      sum.yoy_pages_pct !== null ? `${sum.yoy_pages_pct > 0 ? '+' : ''}${sum.yoy_pages_pct.toFixed(1)}%` : '-',
-      sum.yoy_cost_pct !== null ? `${sum.yoy_cost_pct > 0 ? '+' : ''}${sum.yoy_cost_pct.toFixed(1)}%` : '-'
-    ]);
-
-    const sumPrintBw = rows.reduce((sum, r) => sum + (r[3] || 0), 0);
-    const sumPrintColor = rows.reduce((sum, r) => sum + (r[4] || 0), 0);
-    const sumCopyBw = rows.reduce((sum, r) => sum + (r[5] || 0), 0);
-    const sumCopyColor = rows.reduce((sum, r) => sum + (r[6] || 0), 0);
-    const sumScanner = rows.reduce((sum, r) => sum + (r[7] || 0), 0);
-    const sumPages = rows.reduce((sum, r) => sum + (r[8] || 0), 0);
-    const sumCost = rows.reduce((sum, r) => sum + (r[9] || 0), 0);
-
-    const footerRows = [
-      [],
-      ['สรุปยอดรวมทั้งสิ้น', '', '', sumPrintBw, sumPrintColor, sumCopyBw, sumCopyColor, sumScanner, sumPages, sumCost],
-      [],
-      ['อัตราค่าบริการปัจจุบัน', 'Print B&W', 'Print Color', 'Copy B&W', 'Copy Color', 'Scanner'],
-      ['(บาท/แผ่น)', rates.print_bw, rates.print_color, rates.copy_bw, rates.copy_color, rates.scan]
-    ];
-
-    const allRows = [...rows, ...footerRows];
-
-    saveToExcel(headers, allRows, "Yearly Summary", `yearly_summary_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showAlert('success', 'นำออกรายงานเปรียบเทียบสถิติรายปีสำเร็จ (Excel)');
-  };
-
-  const exportUserHistory = async () => {
+  
+  const exportUserHistory = () => {
     if (!selectedUser || userHistory.length === 0) {
       showAlert('warning', 'ไม่มีข้อมูลสำหรับนำออก');
       return;
@@ -933,14 +771,10 @@ function App() {
     const uid = isMasked ? maskValue(selectedUser.user_id) : selectedUser.user_id;
     const name = isMasked ? maskValue(selectedUser.name) : selectedUser.name;
 
-    try {
-      await axios.post(`${API_BASE}/logs`, {
-        action_type: 'EXPORT_USER_HISTORY',
-        action_details: `นำออกประวัติการใช้งานของพนักงาน '${name}' (ID: ${uid})${userFilterPrinter ? ` เฉพาะเครื่องพิมพ์ '${userFilterPrinter}'` : ''}`
-      });
-    } catch (err) {
-      console.error('Failed to log user history export:', err);
-    }
+    axios.post(`${API_BASE}/logs`, {
+      action_type: 'EXPORT_USER_HISTORY',
+      action_details: `นำออกประวัติการใช้งานของพนักงาน '${name}' (ID: ${uid})${userFilterPrinter ? ` เฉพาะเครื่องพิมพ์ '${userFilterPrinter}'` : ''}`
+    }).catch(err => console.error('Failed to log user history export:', err));
 
     const rows = userHistory.map(h => [
       uid,
@@ -974,8 +808,19 @@ function App() {
 
     const allRows = [...rows, ...footerRows];
 
-    saveToExcel(headers, allRows, "User History", `user_usage_${selectedUser.user_id}_${new Date().toISOString().slice(0, 10)}.xlsx`);
-    showAlert('success', `นำออกรายงานประวัติสำเร็จ: ${selectedUser.name} (Excel)`);
+    const csvContent = "\uFEFF" + [
+      headers.join(','),
+      ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `user_usage_${selectedUser.user_id}_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const exportSelectedMonthDetails = async () => {
@@ -1048,22 +893,42 @@ function App() {
 
       const allRows = [...rows, ...footerRows];
 
+      const csvContent = "\uFEFF" + [
+        headers.join(','),
+        ...allRows.map(row => row.map(val => `"${String(val).replace(/"/g, '""')}"`).join(','))
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
       let filename = '';
       if (catFilterMonth) {
         const thMonth = new Date(`2026-${String(catFilterMonth).padStart(2, '0')}-02`).toLocaleDateString('th-TH', { month: 'long' });
-        filename = `usage_details_${catFilterYear}_${thMonth}.xlsx`;
+        filename = `usage_details_${catFilterYear}_${thMonth}.csv`;
+        
+        axios.post(`${API_BASE}/logs`, {
+          action_type: 'EXPORT_MONTH_DETAILS',
+          action_details: `นำออกรายงานรายละเอียดผู้ใช้งานประจำงวด ${thMonth} ${catFilterYear}${selectedPrinter ? ` เฉพาะเครื่องพิมพ์ ${selectedPrinter}` : ''}`
+        }).catch(err => console.error('Failed to log monthly details export:', err));
       } else {
-        filename = `usage_details_${catFilterYear}_all_months.xlsx`;
+        filename = `usage_details_${catFilterYear}_all_months.csv`;
+        
+        axios.post(`${API_BASE}/logs`, {
+          action_type: 'EXPORT_YEAR_DETAILS',
+          action_details: `นำออกรายงานรายละเอียดผู้ใช้งานทั้งปี ${catFilterYear}${selectedPrinter ? ` เฉพาะเครื่องพิมพ์ ${selectedPrinter}` : ''}`
+        }).catch(err => console.error('Failed to log yearly details export:', err));
       }
 
-      saveToExcel(headers, allRows, "Usage Details", filename);
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
       showAlert('success', `นำออกรายงานรายละเอียดสำเร็จ: ${filename}`);
     } catch (err) {
       console.error('Error exporting details:', err);
-      const serverErr = err.response && err.response.data && err.response.data.error 
-        ? err.response.data.error 
-        : err.message;
-      showAlert('danger', `เกิดข้อผิดพลาดในการนำออกรายงาน: ${serverErr}`);
+      showAlert('danger', 'เกิดข้อผิดพลาดในการนำออกรายงานรายละเอียดการใช้งาน');
     } finally {
       setLoading(false);
     }
@@ -1149,55 +1014,6 @@ function App() {
   const totalPagesAllTime = summaryData.reduce((sum, item) => sum + item.total_pages, 0);
   const totalUsersActive = users.length;
 
-  const yearlySummary = (() => {
-    const yearsMap = {};
-    summaryData.forEach(item => {
-      const yr = item.year;
-      if (!yearsMap[yr]) {
-        yearsMap[yr] = {
-          year: yr,
-          total_users: 0,
-          print_bw: 0,
-          print_color: 0,
-          copy_bw: 0,
-          copy_color: 0,
-          scanner: 0,
-          total_pages: 0,
-          total_cost: 0,
-          months_count: 0
-        };
-      }
-      yearsMap[yr].print_bw += Number(item.print_bw) || 0;
-      yearsMap[yr].print_color += Number(item.print_color) || 0;
-      yearsMap[yr].copy_bw += Number(item.copy_bw) || 0;
-      yearsMap[yr].copy_color += Number(item.copy_color) || 0;
-      yearsMap[yr].scanner += Number(item.scanner) || 0;
-      yearsMap[yr].total_pages += Number(item.total_pages) || 0;
-      yearsMap[yr].total_cost += Number(item.total_cost) || 0;
-      yearsMap[yr].months_count += 1;
-    });
-
-    const sorted = Object.values(yearsMap).sort((a, b) => a.year - b.year); // oldest to newest
-    const result = sorted.map((yrData, idx) => {
-      if (idx === 0) {
-        return {
-          ...yrData,
-          yoy_pages_pct: null,
-          yoy_cost_pct: null
-        };
-      }
-      const prev = sorted[idx - 1];
-      const yoy_pages_pct = prev.total_pages > 0 ? ((yrData.total_pages - prev.total_pages) / prev.total_pages) * 100 : null;
-      const yoy_cost_pct = prev.total_cost > 0 ? ((yrData.total_cost - prev.total_cost) / prev.total_cost) * 100 : null;
-      return {
-        ...yrData,
-        yoy_pages_pct,
-        yoy_cost_pct
-      };
-    });
-    return result.reverse(); // newest to oldest
-  })();
-
   // Chart configs
   const trendChartData = {
     labels: [...summaryData].reverse().map(item => `${item.month}/${item.year}`),
@@ -1205,7 +1021,7 @@ function App() {
       {
         type: 'bar',
         label: 'ค่าใช้จ่ายรวม (บาท)',
-        data: [...summaryData].reverse().map(item => Number(item.total_cost)),
+        data: [...summaryData].reverse().map(item => item.total_cost),
         backgroundColor: 'rgba(59, 130, 246, 0.65)',
         borderColor: '#3b82f6',
         borderWidth: 1,
@@ -1214,7 +1030,7 @@ function App() {
       {
         type: 'line',
         label: 'จำนวนแผ่นรวม (แผ่น)',
-        data: [...summaryData].reverse().map(item => Number(item.total_pages)),
+        data: [...summaryData].reverse().map(item => item.total_pages),
         borderColor: '#8b5cf6',
         backgroundColor: 'rgba(139, 92, 246, 0.15)',
         fill: true,
@@ -1255,87 +1071,6 @@ function App() {
     }
   };
 
-  const compareChartData = (() => {
-    const uniqueYears = Array.from(new Set(summaryData.map(item => item.year))).sort((a, b) => a - b);
-    const monthsThai = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.', 'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
-    const yearColors = [
-      { bg: 'rgba(148, 163, 184, 0.7)', border: '#94a3b8' }, // Slate/Gray
-      { bg: 'rgba(200, 35, 51, 0.8)', border: '#c82333' },   // Theme Red
-      { bg: 'rgba(139, 92, 246, 0.7)', border: '#8b5cf6' },  // Purple
-      { bg: 'rgba(16, 185, 129, 0.7)', border: '#10b981' }   // Green
-    ];
-
-    const datasets = uniqueYears.map((year, idx) => {
-      const data = Array(12).fill(0);
-      summaryData.forEach(item => {
-        if (item.year === year) {
-          const mIdx = item.month - 1;
-          if (mIdx >= 0 && mIdx < 12) {
-            data[mIdx] = compareMetric === 'pages' ? Number(item.total_pages) : Number(item.total_cost);
-          }
-        }
-      });
-
-      const color = yearColors[idx % yearColors.length];
-
-      return {
-        label: `ปี ${year + 543} (ค.ศ. ${year})`,
-        data,
-        backgroundColor: color.bg,
-        borderColor: color.border,
-        borderWidth: 1.5,
-        borderRadius: 4
-      };
-    });
-
-    return {
-      labels: monthsThai,
-      datasets
-    };
-  })();
-
-  const compareChartOptions = {
-    responsive: true,
-    scales: {
-      x: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-        ticks: { color: '#475569' }
-      },
-      y: {
-        grid: { color: 'rgba(0, 0, 0, 0.05)' },
-        ticks: {
-          color: '#475569',
-          callback: function(value) {
-            return value.toLocaleString('th-TH');
-          }
-        },
-        title: {
-          display: true,
-          text: compareMetric === 'pages' ? 'จำนวนแผ่นรวม (แผ่น)' : 'ค่าใช้จ่ายรวม (บาท)',
-          color: '#475569',
-          font: { weight: 'bold' }
-        }
-      }
-    },
-    plugins: {
-      legend: { labels: { color: '#475569' } },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.raw !== null) {
-              label += context.raw.toLocaleString('th-TH') + (compareMetric === 'pages' ? ' แผ่น' : ' บาท');
-            }
-            return label;
-          }
-        }
-      }
-    }
-  };
-
   // Grouped Comparison Bar Chart config for categories (Stacked Grouped Bar)
   const categoryBarData = categoryTrendData.length > 0 ? (() => {
     const printBwData = Array(12).fill(0);
@@ -1347,11 +1082,11 @@ function App() {
     categoryTrendData.forEach(item => {
       const mIdx = item.month - 1;
       if (mIdx >= 0 && mIdx < 12) {
-        printBwData[mIdx] = Number(item.print_bw) || 0;
-        printColorData[mIdx] = Number(item.print_color) || 0;
-        copyBwData[mIdx] = Number(item.copy_bw) || 0;
-        copyColorData[mIdx] = Number(item.copy_color) || 0;
-        scannerData[mIdx] = Number(item.scanner) || 0;
+        printBwData[mIdx] = item.print_bw || 0;
+        printColorData[mIdx] = item.print_color || 0;
+        copyBwData[mIdx] = item.copy_bw || 0;
+        copyColorData[mIdx] = item.copy_color || 0;
+        scannerData[mIdx] = item.scanner || 0;
       }
     });
 
@@ -1446,6 +1181,7 @@ function App() {
               <input 
                 type="text" 
                 className="form-control form-glass" 
+                placeholder="เช่น admin, user"
                 value={loginUsername}
                 onChange={(e) => setLoginUsername(e.target.value)}
                 required
@@ -1477,44 +1213,21 @@ function App() {
               เข้าสู่ระบบ
             </button>
           </form>
+          
+          <div className="text-center mt-4 text-muted" style={{ fontSize: '0.8rem' }}>
+            รหัสเริ่มต้นสำหรับทุกบัญชีคือ <strong>123456</strong>
+          </div>
         </div>
       </div>
     );
   }
-
-  const handleNavClick = (tab) => {
-    setActiveTab(tab);
-    setIsMobileMenuOpen(false);
-  };
-
+  
   return (
-    <div className="min-vh-100 d-flex flex-column flex-md-row position-relative overflow-hidden" style={{ background: 'var(--bg-primary)' }}>
+    <div className="container-fluid min-vh-100 d-flex p-0">
       
-      {/* Mobile Top Navbar Header */}
-      <div className="mobile-topbar d-flex d-md-none justify-content-between align-items-center bg-danger px-3 py-2 text-white position-fixed top-0 start-0 end-0" style={{ zIndex: 1040, height: '60px', borderBottom: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 2px 10px rgba(0,0,0,0.15)', backgroundColor: 'var(--accent-red)' }}>
-        <div className="d-flex align-items-center">
-          <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.4)', background: '#fff', marginRight: '8px', flexShrink: 0 }}>
-            <img src="/logo.png" alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-          </div>
-          <span className="fs-5 fw-bold text-white">Copier Portal</span>
-        </div>
-        <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="btn btn-link text-white p-1" style={{ border: 'none', background: 'transparent' }}>
-          {isMobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-        </button>
-      </div>
-
-      {/* Backdrop overlay for mobile menu */}
-      {isMobileMenuOpen && (
-        <div 
-          className="d-block d-md-none" 
-          onClick={() => setIsMobileMenuOpen(false)} 
-          style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(3px)', zIndex: 1045 }}
-        />
-      )}
-
       {/* Sidebar Layout */}
-      <div className={`sidebar d-flex flex-column ${isMobileMenuOpen ? 'sidebar-open' : ''}`}>
-        <div className="d-flex flex-column align-items-center align-items-md-start px-3 pt-4 text-white min-vh-100 justify-content-between pb-4">
+      <div className="col-auto col-md-3 col-xl-2 px-sm-2 px-0 sidebar d-flex flex-column">
+        <div className="d-flex flex-column align-items-center align-items-sm-start px-3 pt-4 text-white min-vh-100 justify-content-between pb-4">
           <div className="w-100">
             <a href="/" className="d-flex align-items-center pb-3 mb-md-0 me-md-auto text-white text-decoration-none border-bottom border-secondary w-100">
               <div style={{ width: '38px', height: '38px', borderRadius: '50%', overflow: 'hidden', border: '2px solid rgba(255,255,255,0.4)', background: '#fff', flexShrink: 0, boxShadow: '0 2px 8px rgba(0,0,0,0.3)' }} className="me-2">
@@ -1524,77 +1237,86 @@ function App() {
                   style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                 />
               </div>
-              <span className="fs-5 d-inline font-weight-bold text-gradient">Copier Portal</span>
+              <span className="fs-5 d-none d-sm-inline font-weight-bold text-gradient">Copier Portal V2.2</span>
             </a>
-            <ul className="nav nav-pills flex-column mb-auto align-items-center align-items-md-start w-100 mt-4" id="menu">
+            <ul className="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start w-100 mt-4" id="menu">
               <li className="w-100">
                 <button 
-                  onClick={() => handleNavClick('dashboard')} 
+                  onClick={() => setActiveTab('dashboard')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'dashboard' ? 'active' : ''}`}
                 >
                   <LayoutDashboard size={20} />
-                  <span className="ms-1 d-inline">ภาพรวมระบบ</span>
+                  <span className="ms-1 d-none d-sm-inline">ภาพรวมระบบ</span>
                 </button>
               </li>
               <li className="w-100">
                 <button 
-                  onClick={() => handleNavClick('users')} 
+                  onClick={() => setActiveTab('users')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'users' ? 'active' : ''}`}
                 >
                   <UserIcon size={20} />
-                  <span className="ms-1 d-inline">ข้อมูลรายบุคคล</span>
+                  <span className="ms-1 d-none d-sm-inline">ข้อมูลรายบุคคล</span>
                 </button>
               </li>
               <li className="w-100">
                 <button 
-                  onClick={() => handleNavClick('categories')} 
+                  onClick={() => setActiveTab('categories')} 
                   className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'categories' ? 'active' : ''}`}
                 >
                   <ChartIcon size={20} />
-                  <span className="ms-1 d-inline">แยกตามประเภท</span>
+                  <span className="ms-1 d-none d-sm-inline">แยกตามประเภท</span>
+                </button>
+              </li>
+              <li className="w-100">
+                <button 
+                  onClick={() => setActiveTab('about')} 
+                  className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'about' ? 'active' : ''}`}
+                >
+                  <Info size={20} />
+                  <span className="ms-1 d-none d-sm-inline">เกี่ยวกับระบบ</span>
                 </button>
               </li>
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => handleNavClick('upload')} 
+                    onClick={() => setActiveTab('upload')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'upload' ? 'active' : ''}`}
                   >
                     <UploadCloud size={20} />
-                    <span className="ms-1 d-inline">นำเข้าข้อมูล</span>
+                    <span className="ms-1 d-none d-sm-inline">นำเข้าข้อมูล</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => handleNavClick('printers-inventory')} 
+                    onClick={() => setActiveTab('printers-inventory')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'printers-inventory' ? 'active' : ''}`}
                   >
                     <Printer size={20} />
-                    <span className="ms-1 d-inline">คลังเครื่องพิมพ์</span>
+                    <span className="ms-1 d-none d-sm-inline">คลังเครื่องพิมพ์</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => handleNavClick('manage-users')} 
+                    onClick={() => setActiveTab('manage-users')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'manage-users' ? 'active' : ''}`}
                   >
                     <Shield size={20} />
-                    <span className="ms-1 d-inline">จัดการผู้ใช้งาน</span>
+                    <span className="ms-1 d-none d-sm-inline">จัดการผู้ใช้งาน</span>
                   </button>
                 </li>
               )}
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
-                    onClick={() => handleNavClick('system-logs')} 
+                    onClick={() => setActiveTab('system-logs')} 
                     className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'system-logs' ? 'active' : ''}`}
                   >
                     <FileText size={20} />
-                    <span className="ms-1 d-inline">บันทึกเหตุการณ์ (Logs)</span>
+                    <span className="ms-1 d-none d-sm-inline">บันทึกเหตุการณ์ (Logs)</span>
                   </button>
                 </li>
               )}
@@ -1603,43 +1325,11 @@ function App() {
           
           {/* Security Controls Status (SC-3 Display) */}
           <div className="w-100 pt-3 border-top border-secondary">
-            {/* About System Button/Card */}
-            <div className="w-100 mb-2">
-              <button 
-                onClick={() => handleNavClick('about')}
-                className="d-flex align-items-center w-100 text-start border-0 p-2 text-white"
-                style={{ 
-                  fontSize: '0.8rem',
-                  background: activeTab === 'about' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '12px',
-                  cursor: 'pointer',
-                  transition: 'var(--transition-smooth)',
-                  boxShadow: 'none'
-                }}
-                onMouseOver={(e) => {
-                  if (activeTab !== 'about') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (activeTab !== 'about') {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                  } else {
-                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
-                  }
-                }}
-              >
-                <Info size={14} className="me-2 text-white" />
-                <span className="fw-semibold">เกี่ยวกับระบบ</span>
-              </button>
-            </div>
-
             {userRole === 'admin' ? (
-              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-md-start text-muted" style={{ fontSize: '0.8rem' }}>
+              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-sm-start text-muted" style={{ fontSize: '0.8rem' }}>
                 <div className="d-flex align-items-center text-warning mb-1">
                   <Shield size={14} className="me-1" />
-                  <span className="d-inline fw-semibold text-warning">Privacy Mode (SC-3)</span>
+                  <span className="d-none d-sm-inline fw-semibold text-warning">Privacy Mode (SC-3)</span>
                 </div>
                 <div className="form-check form-switch p-0 m-0 d-flex align-items-center">
                   <input 
@@ -1650,25 +1340,25 @@ function App() {
                     checked={isMasked}
                     onChange={(e) => setIsMasked(e.target.checked)}
                   />
-                  <label className="form-check-label d-inline text-secondary cursor-pointer" htmlFor="maskSwitch">
+                  <label className="form-check-label d-none d-sm-inline text-secondary cursor-pointer" htmlFor="maskSwitch">
                     Mask User Data
                   </label>
                 </div>
               </div>
             ) : (
-              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-md-start text-muted" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
+              <div className="glass-card p-2 d-flex flex-column align-items-center align-items-sm-start text-muted" style={{ fontSize: '0.8rem', opacity: 0.85 }}>
                 <div className="d-flex align-items-center text-success mb-1">
                   <Shield size={14} className="me-1" />
-                  <span className="d-inline fw-semibold text-success">PDPA Masking Enabled</span>
+                  <span className="d-none d-sm-inline fw-semibold text-success">PDPA Masking Enabled</span>
                 </div>
-                <span className="text-secondary d-inline" style={{ fontSize: '0.75rem' }}>
+                <span className="text-secondary d-none d-sm-inline" style={{ fontSize: '0.75rem' }}>
                   ข้อมูลผู้ใช้งานถูกบังคับ Mask ตามนโยบายความปลอดภัย
                 </span>
               </div>
             )}
             
             {/* User Account Info & Logout Button */}
-            <div className="mt-3 text-center text-md-start px-2">
+            <div className="mt-3 text-center text-sm-start px-2">
               <span className="text-muted d-block" style={{ fontSize: '0.75rem' }}>ลงชื่อเข้าใช้: {usernameState} ({userRole === 'admin' ? 'Admin' : 'User'})</span>
               <button onClick={handleLogout} className="btn btn-sm btn-outline-light w-100 mt-2 py-1" style={{ fontSize: '0.8rem' }}>
                 ออกจากระบบ
@@ -1679,7 +1369,7 @@ function App() {
       </div>
 
       {/* Main Content Area */}
-      <div className="main-content flex-grow-1 py-4 px-3 px-md-4 overflow-auto animate-fade-in" style={{ maxHeight: '100vh' }}>
+      <div className="col py-4 px-4 overflow-auto animate-fade-in" style={{ maxHeight: '100vh' }}>
         
         {/* Global Alerts */}
         {alert && (
@@ -1691,23 +1381,13 @@ function App() {
 
         {/* Global Loading Spinner */}
         {loading && (
-          <div className="position-fixed top-0 end-0 p-3 d-flex align-items-center gap-2" style={{ zIndex: 9999 }}>
-            {isImporting ? (
-              <div className="glass-card py-2 px-3 d-flex align-items-center gap-2 animate-fade-in" style={{ background: 'rgba(20, 10, 15, 0.85)', backdropFilter: 'blur(10px)', borderRadius: '12px', border: '1px solid rgba(255, 51, 102, 0.2)' }}>
-                <div className="spinner-border text-primary spinner-border-sm" role="status"></div>
-                <span className="text-white fw-bold" style={{ fontSize: '0.85rem' }}>กำลังนำเข้า {importProgress}%</span>
-              </div>
-            ) : (
-              <div className="spinner-border text-primary" role="status">
-                <span className="visually-hidden">Loading...</span>
-              </div>
-            )}
+          <div className="position-fixed top-0 end-0 p-3" style={{ zIndex: 9999 }}>
+            <div className="spinner-border text-primary" role="status">
+              <span className="visually-hidden">Loading...</span>
+            </div>
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 1: DASHBOARD SUMMARY */}
-        {/* ========================================================================= */}
         {activeTab === 'dashboard' && (
           <div className="animate-fade-in">
             <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
@@ -1795,45 +1475,13 @@ function App() {
             <div className="row g-4 mb-4">
               <div className="col-12 col-xl-8">
                 <div className="glass-card h-100">
-                  <div className="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center mb-4 gap-2">
-                    <h5 className="fw-bold mb-0 d-flex align-items-center">
-                      <Layers size={18} className="text-primary me-2" />
-                      {chartMode === 'trend' ? 'แนวโน้มการใช้งานรายเดือน (ยอดพิมพ์และค่าใช้จ่าย)' : 'เปรียบเทียบสถิติรายปี (Year-over-Year)'}
-                    </h5>
-                    
-                    <div className="d-flex gap-2 w-100 w-sm-auto">
-                      {/* Mode Selector */}
-                      <select 
-                        className="form-select form-select-sm form-glass" 
-                        style={{ maxWidth: '160px' }}
-                        value={chartMode} 
-                        onChange={(e) => setChartMode(e.target.value)}
-                      >
-                        <option value="trend">แนวโน้มรายเดือน</option>
-                        <option value="compare">เปรียบเทียบรายปี</option>
-                      </select>
-
-                      {/* Metric Selector (only show in compare mode) */}
-                      {chartMode === 'compare' && (
-                        <select 
-                          className="form-select form-select-sm form-glass" 
-                          style={{ maxWidth: '180px' }}
-                          value={compareMetric} 
-                          onChange={(e) => setCompareMetric(e.target.value)}
-                        >
-                          <option value="pages">ยอดพิมพ์รวม (แผ่น)</option>
-                          <option value="cost">ค่าใช้จ่าย (บาท)</option>
-                        </select>
-                      )}
-                    </div>
-                  </div>
-
+                  <h5 className="fw-bold mb-4 d-flex align-items-center">
+                    <Layers size={18} className="text-primary me-2" />
+                    แนวโน้มการใช้งานรายเดือน (ยอดพิมพ์และค่าใช้จ่าย)
+                  </h5>
                   {summaryData.length > 0 ? (
                     <div style={{ height: '350px' }}>
-                      <Bar 
-                        data={chartMode === 'trend' ? trendChartData : compareChartData} 
-                        options={chartMode === 'trend' ? trendChartOptions : compareChartOptions} 
-                      />
+                      <Bar data={trendChartData} options={trendChartOptions} />
                     </div>
                   ) : (
                     <div className="d-flex flex-column align-items-center justify-content-center h-75 text-muted">
@@ -1896,124 +1544,62 @@ function App() {
               </div>
             </div>
 
-            {/* General summary table list */}
+            {/* General monthly table list */}
             <div className="glass-card">
               <div className="d-flex justify-content-between align-items-center mb-3">
-                <h5 className="fw-bold mb-0">
-                  {chartMode === 'trend' ? 'สรุปสถิติตามรายเดือน' : 'เปรียบเทียบสรุปสถิติรายปี (Annual YoY Summary)'}
-                </h5>
-                <button 
-                  onClick={chartMode === 'trend' ? exportMonthlySummary : exportYearlySummary} 
-                  className="btn btn-sm btn-glass-primary"
-                >
-                  นำออกรายงาน (Export Excel)
+                <h5 className="fw-bold mb-0">สรุปสถิติตามรายเดือน</h5>
+                <button onClick={exportMonthlySummary} className="btn btn-sm btn-glass-primary">
+                  นำออกรายงาน (Export CSV)
                 </button>
               </div>
               <div className="table-responsive">
-                {chartMode === 'trend' ? (
-                  <table className="table table-glass">
-                    <thead>
-                      <tr>
-                        <th>ประจำงวด</th>
-                        <th>จำนวนผู้ใช้งาน</th>
-                        <th className="text-end">Print B&W (แผ่น)</th>
-                        <th className="text-end">Print Color (แผ่น)</th>
-                        <th className="text-end">Copy B&W (แผ่น)</th>
-                        <th className="text-end">Copy Color (แผ่น)</th>
-                        <th className="text-end">Scanner (แผ่น)</th>
-                        <th className="text-end">รวมจำนวน (แผ่น)</th>
-                        <th className="text-end">รวมค่าใช้จ่าย (บาท)</th>
+                <table className="table table-glass">
+                  <thead>
+                    <tr>
+                      <th>ประจำงวด</th>
+                      <th>จำนวนผู้ใช้งาน</th>
+                      <th className="text-end">Print B&W (แผ่น)</th>
+                      <th className="text-end">Print Color (แผ่น)</th>
+                      <th className="text-end">Copy B&W (แผ่น)</th>
+                      <th className="text-end">Copy Color (แผ่น)</th>
+                      <th className="text-end">Scanner (แผ่น)</th>
+                      <th className="text-end">รวมจำนวน (แผ่น)</th>
+                      <th className="text-end">รวมค่าใช้จ่าย (บาท)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summaryData.map((sum, index) => (
+                      <tr key={index}>
+                        <td className="text-white fw-bold">
+                          {formatThaiMonthYear(`${sum.year}-${String(sum.month).padStart(2, '0')}-02`)}
+                        </td>
+                        <td>{sum.total_users} คน</td>
+                        <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
+                        <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
+                        <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
+                        <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
+                        <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
+                        <td className="text-end font-weight-bold">
+                          <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
+                        </td>
+                        <td className="text-end font-weight-bold">
+                          <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {summaryData.map((sum, index) => (
-                        <tr key={index}>
-                          <td className="text-white fw-bold">
-                            {formatThaiMonthYear(`${sum.year}-${String(sum.month).padStart(2, '0')}-02`)}
-                          </td>
-                          <td>{sum.total_users} คน</td>
-                          <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
-                          <td className="text-end font-weight-bold">
-                            <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
-                          </td>
-                          <td className="text-end font-weight-bold">
-                            <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
-                          </td>
-                        </tr>
-                      ))}
-                      {summaryData.length === 0 && (
-                        <tr>
-                          <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายเดือน</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                ) : (
-                  <table className="table table-glass">
-                    <thead>
+                    ))}
+                    {summaryData.length === 0 && (
                       <tr>
-                        <th>ประจำปี</th>
-                        <th>จำนวนเดือนที่มีข้อมูล</th>
-                        <th className="text-end">Print B&W (แผ่น)</th>
-                        <th className="text-end">Print Color (แผ่น)</th>
-                        <th className="text-end">Copy B&W (แผ่น)</th>
-                        <th className="text-end">Copy Color (แผ่น)</th>
-                        <th className="text-end">Scanner (แผ่น)</th>
-                        <th className="text-end">รวมหน้า (แผ่น)</th>
-                        <th className="text-end">รวมค่าบริการ (บาท)</th>
+                        <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายเดือน</td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {yearlySummary.map((sum, index) => (
-                        <tr key={index}>
-                          <td className="text-white fw-bold">
-                            ปี {sum.year + 543} (ค.ศ. {sum.year})
-                          </td>
-                          <td>{sum.months_count} เดือน</td>
-                          <td className="text-end">{(sum.print_bw || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.print_color || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.copy_bw || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.copy_color || 0).toLocaleString()}</td>
-                          <td className="text-end">{(sum.scanner || 0).toLocaleString()}</td>
-                          <td className="text-end font-weight-bold">
-                            <span className="text-gradient">{(sum.total_pages || 0).toLocaleString()}</span>
-                            {sum.yoy_pages_pct !== null && (
-                              <span className={sum.yoy_pages_pct >= 0 ? "text-success ms-2" : "text-danger ms-2"} style={{ fontSize: '0.8rem' }} title="อัตราการเติบโต YoY">
-                                ({sum.yoy_pages_pct >= 0 ? '+' : ''}{sum.yoy_pages_pct.toFixed(1)}%)
-                              </span>
-                            )}
-                          </td>
-                          <td className="text-end font-weight-bold">
-                            <span className="text-gradient-green">{(sum.total_cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</span>
-                            {sum.yoy_cost_pct !== null && (
-                              <span className={sum.yoy_cost_pct >= 0 ? "text-success ms-2" : "text-danger ms-2"} style={{ fontSize: '0.8rem' }} title="อัตราการเติบโต YoY">
-                                ({sum.yoy_cost_pct >= 0 ? '+' : ''}{sum.yoy_cost_pct.toFixed(1)}%)
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                      {yearlySummary.length === 0 && (
-                        <tr>
-                          <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการพิมพ์รายปี</td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                )}
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
 
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 2: INDIVIDUAL USER REPORT */}
-        {/* ========================================================================= */}
         {activeTab === 'users' && (
           <div className="animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -2148,7 +1734,7 @@ function App() {
                       <div className="d-flex justify-content-between align-items-center mb-3">
                         <h6 className="fw-bold mb-0 text-muted">รายละเอียดประวัติแต่ละงวดการนำเข้า</h6>
                         <button onClick={exportUserHistory} className="btn btn-sm btn-glass-primary py-1 px-2" style={{ fontSize: '0.8rem' }}>
-                          นำออกรายงาน (Export Excel)
+                          นำออกรายงาน (Export CSV)
                         </button>
                       </div>
                       <div className="table-responsive">
@@ -2212,9 +1798,6 @@ function App() {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 3: CATEGORIES BREAKDOWN */}
-        {/* ========================================================================= */}
         {activeTab === 'categories' && (
           <div className="animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -2290,7 +1873,7 @@ function App() {
                     className="btn btn-glass-primary w-100"
                     disabled={!catFilterYear}
                   >
-                    นำออก (Excel)
+                    นำออก (CSV)
                   </button>
                 </div>
               </div>
@@ -2299,13 +1882,12 @@ function App() {
             {/* Chart breakdown and data card */}
             {categoriesData ? (
               <div className="row g-4">
-                {/* 1. Full-width Graph */}
-                <div className="col-12">
-                  <div className="glass-card d-flex flex-column align-items-center justify-content-center">
+                <div className="col-12 col-lg-5">
+                  <div className="glass-card d-flex flex-column align-items-center justify-content-center mb-4">
                     <h5 className="fw-bold mb-4 w-100 text-start">
                       {catFilterYear ? `เปรียบเทียบการใช้งานรายเดือน ปี ${catFilterYear}` : 'เปรียบเทียบการใช้งานรายเดือน'}
                     </h5>
-                    <div style={{ width: '100%', height: '480px' }} className="d-flex align-items-center justify-content-center">
+                    <div style={{ width: '100%', height: '280px' }} className="d-flex align-items-center justify-content-center">
                       {categoryBarData ? (
                         <Bar 
                           data={categoryBarData} 
@@ -2330,11 +1912,86 @@ function App() {
                       )}
                     </div>
                   </div>
+
+                  <div className="glass-card animate-fade-in">
+                    <h5 className="fw-bold mb-3 d-flex align-items-center">
+                      <Shield size={18} className="text-warning me-2" />
+                      ตั้งค่าอัตราค่าบริการ (Rate Settings)
+                    </h5>
+                    <form onSubmit={handleRatesSubmit}>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print ขาวดำ (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.print_bw}
+                            onChange={(e) => setEditRates({ ...editRates, print_bw: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print สี (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.print_color}
+                            onChange={(e) => setEditRates({ ...editRates, print_color: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                      </div>
+                      <div className="row g-2 mb-2">
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy ขาวดำ (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.copy_bw}
+                            onChange={(e) => setEditRates({ ...editRates, copy_bw: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                        <div className="col-6">
+                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy สี (บาท)</label>
+                          <input 
+                            type="number" 
+                            step="0.01" 
+                            className="form-control form-glass" 
+                            value={editRates.copy_color}
+                            onChange={(e) => setEditRates({ ...editRates, copy_color: e.target.value })}
+                            required
+                            disabled={userRole !== 'admin'}
+                          />
+                        </div>
+                      </div>
+                      <div className="mb-3">
+                        <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>สแกนเนอร์ (บาท)</label>
+                        <input 
+                          type="number" 
+                          step="0.01" 
+                          className="form-control form-glass" 
+                          value={editRates.scan}
+                          onChange={(e) => setEditRates({ ...editRates, scan: e.target.value })}
+                          required
+                          disabled={userRole !== 'admin'}
+                        />
+                      </div>
+                      <button type="submit" className="btn btn-sm btn-glass-primary w-100 py-2" disabled={loading || userRole !== 'admin'}>
+                        {userRole !== 'admin' ? 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขได้' : (loading ? 'กำลังบันทึก...' : 'บันทึกอัตราค่าบริการใหม่')}
+                      </button>
+                    </form>
+                  </div>
                 </div>
 
-                {/* 2. Bottom Row - Column 1: Stats Details */}
                 <div className="col-12 col-lg-7">
-                  <div className="glass-card h-100">
+                  <div className="glass-card">
                     <h5 className="fw-bold mb-4">รายละเอียดสถิติและอัตราค่าใช้จ่าย</h5>
                     <div className="table-responsive">
                       <table className="table table-glass">
@@ -2414,85 +2071,6 @@ function App() {
                     </div>
                   </div>
                 </div>
-
-                {/* 2. Bottom Row - Column 2: Rate Settings */}
-                <div className="col-12 col-lg-5">
-                  <div className="glass-card animate-fade-in h-100">
-                    <h5 className="fw-bold mb-3 d-flex align-items-center">
-                      <Shield size={18} className="text-warning me-2" />
-                      ตั้งค่าอัตราค่าบริการ (Rate Settings)
-                    </h5>
-                    <form onSubmit={handleRatesSubmit}>
-                      <div className="row g-2 mb-2">
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print ขาวดำ (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.print_bw}
-                            onChange={(e) => setEditRates({ ...editRates, print_bw: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Print สี (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.print_color}
-                            onChange={(e) => setEditRates({ ...editRates, print_color: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                      </div>
-                      <div className="row g-2 mb-2">
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy ขาวดำ (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.copy_bw}
-                            onChange={(e) => setEditRates({ ...editRates, copy_bw: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                        <div className="col-6">
-                          <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>Copy สี (บาท)</label>
-                          <input 
-                            type="number" 
-                            step="0.01" 
-                            className="form-control form-glass" 
-                            value={editRates.copy_color}
-                            onChange={(e) => setEditRates({ ...editRates, copy_color: e.target.value })}
-                            required
-                            disabled={userRole !== 'admin'}
-                          />
-                        </div>
-                      </div>
-                      <div className="mb-3">
-                        <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>สแกนเนอร์ (บาท)</label>
-                        <input 
-                          type="number" 
-                          step="0.01" 
-                          className="form-control form-glass" 
-                          value={editRates.scan}
-                          onChange={(e) => setEditRates({ ...editRates, scan: e.target.value })}
-                          required
-                          disabled={userRole !== 'admin'}
-                        />
-                      </div>
-                      <button type="submit" className="btn btn-sm btn-glass-primary w-100 py-2" disabled={loading || userRole !== 'admin'}>
-                        {userRole !== 'admin' ? 'เฉพาะผู้ดูแลระบบเท่านั้นที่แก้ไขได้' : (loading ? 'กำลังบันทึก...' : 'บันทึกอัตราค่าบริการใหม่')}
-                      </button>
-                    </form>
-                  </div>
-                </div>
               </div>
             ) : (
               <div className="glass-card text-center py-5 text-muted">
@@ -2503,15 +2081,12 @@ function App() {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 4: IMPORT DATA & FILE MANAGER */}
-        {/* ========================================================================= */}
         {activeTab === 'upload' && (
           <div className="animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
                 <h2 className="fw-bold mb-0">ระบบนำเข้าไฟล์และจัดการรายงาน</h2>
-                <p className="text-muted mb-0">อัปโหลดไฟล์สรุปยอดเครื่องพิมพ์ (CSV / Excel) เข้าระบบและเก็บลงใน MSSQL Database</p>
+                <p className="text-muted mb-0">อัปโหลดไฟล์สรุปยอดเครื่องพิมพ์ (CSV / Excel) เข้าระบบและเก็บลงในฐานข้อมูล</p>
               </div>
             </div>
 
@@ -2578,39 +2153,13 @@ function App() {
                       </div>
                     </div>
 
-                    {isImporting ? (
-                      <div className="mt-3 p-3 glass-card text-start animate-fade-in" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                        <div className="d-flex justify-content-between align-items-center mb-2">
-                          <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
-                            {importProgress < 40 ? '📤 กำลังอัปโหลดไฟล์รายงาน...' : '⚙️ กำลังประมวลผลและนำเข้าฐานข้อมูล...'}
-                          </span>
-                          <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
-                        </div>
-                        <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
-                          <div 
-                            className="progress-bar progress-bar-striped progress-bar-animated" 
-                            role="progressbar" 
-                            style={{ 
-                              width: `${importProgress}%`, 
-                              transition: 'width 0.2s ease-in-out',
-                              background: 'linear-gradient(90deg, #ff3366, #ff0033)',
-                              borderRadius: '5px'
-                            }} 
-                            aria-valuenow={importProgress} 
-                            aria-valuemin="0" 
-                            aria-valuemax="100"
-                          ></div>
-                        </div>
-                      </div>
-                    ) : (
-                      <button 
-                        type="submit" 
-                        className="btn btn-glass-primary w-100 py-2"
-                        disabled={loading}
-                      >
-                        เริ่มกระบวนการนำเข้า (Import to Database)
-                      </button>
-                    )}
+                    <button 
+                      type="submit" 
+                      className="btn btn-glass-primary w-100 py-2"
+                      disabled={loading}
+                    >
+                      {loading ? 'กำลังประมวลผลข้อมูลรายงาน...' : 'เริ่มกระบวนการนำเข้า (Import to Database)'}
+                    </button>
                   </form>
                 </div>
               </div>
@@ -2653,14 +2202,6 @@ function App() {
                               </td>
                               <td className="text-center">
                                 <button 
-                                  onClick={() => handlePreviewReport(rep)} 
-                                  className="btn btn-sm btn-glass-primary py-1 px-2 me-2 text-white"
-                                  style={{ background: 'rgba(255, 51, 102, 0.15)', border: '1px solid rgba(255, 51, 102, 0.3)' }}
-                                  title="ดูตัวอย่างข้อมูลไฟล์นี้"
-                                >
-                                  <Eye size={14} />
-                                </button>
-                                <button 
                                   onClick={() => handleDeleteReport(rep.id)} 
                                   className="btn btn-sm btn-glass-danger py-1 px-2"
                                   title="ลบรายงานนี้ออกจากฐานข้อมูล"
@@ -2684,9 +2225,7 @@ function App() {
             </div>
           </div>
         )}
-        {/* ========================================================================= */}
-        {/* TAB 5: USER MANAGEMENT (Admin Only) */}
-        {/* ========================================================================= */}
+
         {activeTab === 'manage-users' && userRole === 'admin' && (
           <div className="animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -2813,158 +2352,152 @@ function App() {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 6: SYSTEM ACTIVITY LOGS (Admin Only) */}
-        {/* ========================================================================= */}
         {activeTab === 'system-logs' && userRole === 'admin' && (
           <div className="animate-fade-in">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <div>
-                <h2 className="fw-bold mb-0">บันทึกประวัติเหตุการณ์ (System Activity Logs)</h2>
-                <p className="text-muted mb-0">ตรวจสอบบันทึกประวัติการกระทำ การล็อกอิน และการเปลี่ยนแปลงข้อมูลทั้งหมดในระบบ</p>
-              </div>
-              <button onClick={() => fetchSystemLogs(logPage, debouncedSearch, logFilterType)} className="btn btn-sm btn-glass-primary">
-                รีเฟรชบันทึกเหตุการณ์
-              </button>
-            </div>
+             <div className="d-flex justify-content-between align-items-center mb-4">
+               <div>
+                 <h2 className="fw-bold mb-0">บันทึกประวัติเหตุการณ์ (System Activity Logs)</h2>
+                 <p className="text-muted mb-0">ตรวจสอบบันทึกประวัติการกระทำ การล็อกอิน และการเปลี่ยนแปลงข้อมูลทั้งหมดในระบบ</p>
+               </div>
+               <button onClick={() => fetchSystemLogs(logPage, debouncedSearch, logFilterType)} className="btn btn-sm btn-glass-primary">
+                 รีเฟรชบันทึกเหตุการณ์
+               </button>
+             </div>
 
-            {/* Filter controls */}
-            <div className="glass-card mb-4">
-              <div className="row g-3">
-                <div className="col-12 col-sm-4">
-                  <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>ค้นหาตามผู้ใช้งาน / รายละเอียด</label>
-                  <div className="input-group">
-                    <span className="input-group-text form-glass bg-transparent text-muted border-end-0">
-                      <Search size={16} />
-                    </span>
-                    <input 
-                      type="text" 
-                      className="form-control form-glass border-start-0" 
-                      placeholder="พิมพ์เพื่อค้นหา..."
-                      value={logFilterUser}
-                      onChange={(e) => {
-                        setLogFilterUser(e.target.value);
-                        setLogPage(1);
-                      }}
-                    />
-                  </div>
-                </div>
-                <div className="col-12 col-sm-4">
-                  <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>ประเภทการกระทำ</label>
-                  <select 
-                    className="form-select form-glass" 
-                    value={logFilterType}
-                    onChange={(e) => {
-                      setLogFilterType(e.target.value);
-                      setLogPage(1);
-                    }}
-                  >
-                    <option value="">ทั้งหมดทุกประเภท</option>
-                    <option value="LOGIN">LOGIN (เข้าสู่ระบบสำเร็จ)</option>
-                    <option value="LOGIN_FAILED">LOGIN_FAILED (เข้าสู่ระบบไม่สำเร็จ)</option>
-                    <option value="UPLOAD">UPLOAD (นำเข้าไฟล์รายงาน)</option>
-                    <option value="DELETE_REPORT">DELETE_REPORT (ลบไฟล์รายงาน)</option>
-                    <option value="UPDATE_RATES">UPDATE_RATES (แก้ไขอัตราค่าบริการ)</option>
-                    <option value="CREATE_USER">CREATE_USER (สร้างบัญชีผู้ใช้งาน)</option>
-                    <option value="UPDATE_USER">UPDATE_USER (แก้ไขบัญชีผู้ใช้งาน)</option>
-                    <option value="DELETE_USER">DELETE_USER (ลบบัญชีผู้ใช้งาน)</option>
-                  </select>
-                </div>
-                <div className="col-12 col-sm-4 d-flex align-items-end">
-                  <button 
-                    onClick={() => { setLogFilterUser(''); setLogFilterType(''); setLogPage(1); }} 
-                    className="btn btn-outline-secondary form-glass w-100"
-                  >
-                    ล้างค่าตัวกรอง
-                  </button>
-                </div>
-              </div>
-            </div>
+             {/* Filter controls */}
+             <div className="glass-card mb-4">
+               <div className="row g-3">
+                 <div className="col-12 col-sm-4">
+                   <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>ค้นหาตามผู้ใช้งาน / รายละเอียด</label>
+                   <div className="input-group">
+                     <span className="input-group-text form-glass bg-transparent text-muted border-end-0">
+                       <Search size={16} />
+                     </span>
+                     <input 
+                       type="text" 
+                       className="form-control form-glass border-start-0" 
+                       placeholder="พิมพ์เพื่อค้นหา..."
+                       value={logFilterUser}
+                       onChange={(e) => {
+                         setLogFilterUser(e.target.value);
+                         setLogPage(1);
+                       }}
+                     />
+                   </div>
+                 </div>
+                 <div className="col-12 col-sm-4">
+                   <label className="text-muted mb-1" style={{ fontSize: '0.85rem' }}>ประเภทการกระทำ</label>
+                   <select 
+                     className="form-select form-glass" 
+                     value={logFilterType}
+                     onChange={(e) => {
+                       setLogFilterType(e.target.value);
+                       setLogPage(1);
+                     }}
+                   >
+                     <option value="">ทั้งหมดทุกประเภท</option>
+                     <option value="LOGIN">LOGIN (เข้าสู่ระบบสำเร็จ)</option>
+                     <option value="LOGIN_FAILED">LOGIN_FAILED (เข้าสู่ระบบไม่สำเร็จ)</option>
+                     <option value="UPLOAD">UPLOAD (นำเข้าไฟล์รายงาน)</option>
+                     <option value="DELETE_REPORT">DELETE_REPORT (ลบไฟล์รายงาน)</option>
+                     <option value="UPDATE_RATES">UPDATE_RATES (แก้ไขอัตราค่าบริการ)</option>
+                     <option value="CREATE_USER">CREATE_USER (สร้างบัญชีผู้ใช้งาน)</option>
+                     <option value="UPDATE_USER">UPDATE_USER (แก้ไขบัญชีผู้ใช้งาน)</option>
+                     <option value="DELETE_USER">DELETE_USER (ลบบัญชีผู้ใช้งาน)</option>
+                   </select>
+                 </div>
+                 <div className="col-12 col-sm-4 d-flex align-items-end">
+                   <button 
+                     onClick={() => { setLogFilterUser(''); setLogFilterType(''); setLogPage(1); }} 
+                     className="btn btn-outline-secondary form-glass w-100"
+                   >
+                     ล้างค่าตัวกรอง
+                   </button>
+                 </div>
+               </div>
+             </div>
 
-            {/* Logs Table */}
-            <div className="glass-card">
-              <div className="table-responsive" style={{ maxHeight: '600px' }}>
-                <table className="table table-glass">
-                  <thead>
-                    <tr>
-                      <th>วัน-เวลา</th>
-                      <th>ประเภท</th>
-                      <th>ผู้ดำเนินการ</th>
-                      <th>บทบาท</th>
-                      <th>รายละเอียดการกระทำ</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {systemLogs.map((log) => {
-                      let badgeClass = 'bg-secondary';
-                      if (log.action_type === 'LOGIN') badgeClass = 'bg-success';
-                      else if (log.action_type === 'LOGIN_FAILED') badgeClass = 'bg-danger';
-                      else if (log.action_type === 'UPLOAD') badgeClass = 'bg-primary';
-                      else if (log.action_type === 'DELETE_REPORT' || log.action_type === 'DELETE_USER') badgeClass = 'bg-danger';
-                      else if (log.action_type === 'UPDATE_RATES') badgeClass = 'bg-warning text-dark';
-                      else if (log.action_type === 'CREATE_USER' || log.action_type === 'UPDATE_USER') badgeClass = 'bg-info text-dark';
+             {/* Logs Table */}
+             <div className="glass-card">
+               <div className="table-responsive" style={{ maxHeight: '600px' }}>
+                 <table className="table table-glass">
+                   <thead>
+                     <tr>
+                       <th>วัน-เวลา</th>
+                       <th>ประเภท</th>
+                       <th>ผู้ดำเนินการ</th>
+                       <th>บทบาท</th>
+                       <th>รายละเอียดการกระทำ</th>
+                     </tr>
+                   </thead>
+                   <tbody>
+                     {systemLogs.map((log) => {
+                       let badgeClass = 'bg-secondary';
+                       if (log.action_type === 'LOGIN') badgeClass = 'bg-success';
+                       else if (log.action_type === 'LOGIN_FAILED') badgeClass = 'bg-danger';
+                       else if (log.action_type === 'UPLOAD') badgeClass = 'bg-primary';
+                       else if (log.action_type === 'DELETE_REPORT' || log.action_type === 'DELETE_USER') badgeClass = 'bg-danger';
+                       else if (log.action_type === 'UPDATE_RATES') badgeClass = 'bg-warning text-dark';
+                       else if (log.action_type === 'CREATE_USER' || log.action_type === 'UPDATE_USER') badgeClass = 'bg-info text-dark';
 
-                      return (
-                        <tr key={log.id}>
-                          <td className="text-muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                            {new Date(log.created_at).toLocaleString('th-TH')}
-                          </td>
-                          <td>
-                            <span className={`badge ${badgeClass} px-2 py-1`}>
-                              {log.action_type}
-                            </span>
-                          </td>
-                          <td className="text-white fw-bold">{log.username}</td>
-                          <td>
-                            <span className={`badge ${log.role === 'admin' ? 'bg-danger' : 'bg-secondary'} px-2 py-1`}>
-                              {log.role.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="text-white">{log.action_details}</td>
-                        </tr>
-                      );
-                    })}
-                    {systemLogs.length === 0 && (
-                      <tr>
-                        <td colSpan="5" className="text-center text-muted py-4">ไม่พบข้อมูลประวัติเหตุการณ์ในระบบ</td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                       return (
+                         <tr key={log.id}>
+                           <td className="text-muted" style={{ fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                             {new Date(log.created_at).toLocaleString('th-TH')}
+                           </td>
+                           <td>
+                             <span className={`badge ${badgeClass} px-2 py-1`}>
+                               {log.action_type}
+                             </span>
+                           </td>
+                           <td className="text-white fw-bold">{log.username}</td>
+                           <td>
+                             <span className={`badge ${log.role === 'admin' ? 'bg-danger' : 'bg-secondary'} px-2 py-1`}>
+                               {log.role.toUpperCase()}
+                             </span>
+                           </td>
+                           <td className="text-white">{log.action_details}</td>
+                         </tr>
+                       );
+                     })}
+                     {systemLogs.length === 0 && (
+                       <tr>
+                         <td colSpan="5" className="text-center text-muted py-4">ไม่พบข้อมูลประวัติเหตุการณ์ในระบบ</td>
+                       </tr>
+                     )}
+                   </tbody>
+                 </table>
+               </div>
 
-              {/* Pagination controls */}
-              <div className="d-flex justify-content-between align-items-center mt-4 border-top border-secondary pt-3">
-                <div className="text-muted" style={{ fontSize: '0.85rem' }}>
-                  แสดงหน้า {logPage} จาก {logTotalPages} หน้า (ทั้งหมด {logTotalCount} รายการ)
-                </div>
-                <div className="d-flex gap-2">
-                  <button 
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary form-glass text-white px-3"
-                    onClick={() => setLogPage(prev => Math.max(prev - 1, 1))}
-                    disabled={logPage === 1}
-                  >
-                    หน้าก่อนหน้า
-                  </button>
-                  <button 
-                    type="button"
-                    className="btn btn-sm btn-outline-secondary form-glass text-white px-3"
-                    onClick={() => setLogPage(prev => Math.min(prev + 1, logTotalPages))}
-                    disabled={logPage === logTotalPages}
-                  >
-                    หน้าถัดไป
-                  </button>
-                </div>
-              </div>
+               {/* Pagination controls */}
+               <div className="d-flex justify-content-between align-items-center mt-4 border-top border-secondary pt-3">
+                 <div className="text-muted" style={{ fontSize: '0.85rem' }}>
+                   แสดงหน้า {logPage} จาก {logTotalPages} หน้า (ทั้งหมด {logTotalCount} รายการ)
+                 </div>
+                 <div className="d-flex gap-2">
+                   <button 
+                     type="button"
+                     className="btn btn-sm btn-outline-secondary form-glass text-white px-3"
+                     onClick={() => setLogPage(prev => Math.max(prev - 1, 1))}
+                     disabled={logPage === 1}
+                   >
+                     หน้าก่อนหน้า
+                   </button>
+                   <button 
+                     type="button"
+                     className="btn btn-sm btn-outline-secondary form-glass text-white px-3"
+                     onClick={() => setLogPage(prev => Math.min(prev + 1, logTotalPages))}
+                     disabled={logPage === logTotalPages}
+                   >
+                     หน้าถัดไป
+                   </button>
+                 </div>
+               </div>
 
-            </div>
+             </div>
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 7: PRINTER INVENTORY (Admin Only) */}
-        {/* ========================================================================= */}
         {activeTab === 'printers-inventory' && userRole === 'admin' && (
           <div className="animate-fade-in">
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -3060,7 +2593,7 @@ function App() {
                               <button 
                                 onClick={() => handleEditInventoryPrinter(p)}
                                 className="btn btn-sm btn-outline-secondary form-glass me-2 py-1 px-2"
-                                title="แก้ไขเครื่องพิมพ์"
+                                  title="แก้ไขเครื่องพิมพ์"
                               >
                                 แก้ไข
                               </button>
@@ -3088,509 +2621,418 @@ function App() {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 8: ABOUT SYSTEM */}
-        {/* ========================================================================= */}
         {activeTab === 'about' && (
           <div className="animate-fade-in">
-            {/* Header */}
-            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+            {/* Header info */}
+            <div className="d-flex justify-content-between align-items-center mb-4">
               <div>
-                <span className="badge bg-danger px-3 py-1.5 mb-2" style={{ fontSize: '0.8rem', background: 'rgba(200, 35, 51, 0.08)', color: 'var(--accent-red)', border: '1px solid rgba(200, 35, 51, 0.2)', borderRadius: '30px', fontWeight: '600' }}>
-                  วิชาที่ 7: AI Engineering / LLM / RAG / AI Workflow
-                </span>
-                <h2 className="fw-bold mb-0 text-gradient">เกี่ยวกับระบบ Copier Portal</h2>
-                <p className="text-muted mb-0">ข้อมูลนำเสนอโครงงานวิเคราะห์และควบคุมความเป็นส่วนตัวในการพิมพ์ระดับองค์กร</p>
+                <h2 className="fw-bold mb-0 text-white">เกี่ยวกับระบบ (About the System)</h2>
+                <p className="text-white-50 mb-0">โครงงานและสไลด์นำเสนอ Copier Portal Dashboard</p>
               </div>
-              <div>
-                <button onClick={() => window.print()} className="btn btn-sm btn-glass-primary d-flex align-items-center gap-2 py-2">
-                  <Printer size={16} />
-                  <span>สั่งพิมพ์ข้อเสนอโครงงาน / PDF</span>
+              <button className="btn btn-glass-primary text-white py-2 px-3 fw-bold border" onClick={() => window.print()}>
+                🖨️ สั่งพิมพ์ / บันทึก PDF
+              </button>
+            </div>
+
+            {/* Slide Viewer Glass Card */}
+            <div className="glass-card p-4 mb-4 text-slate-900" style={{ color: '#0f172a' }}>
+              {/* Slide Tabs Navigation */}
+              <div className="d-flex flex-wrap gap-2 mb-4 justify-content-center border-bottom pb-3">
+                {[1, 2, 3, 4].map(idx => (
+                  <button
+                    key={idx}
+                    onClick={() => setAboutSlideTab(idx)}
+                    className={`btn py-2 px-4 fw-bold rounded-pill transition-all ${aboutSlideTab === idx ? 'btn-danger text-white' : 'btn-outline-light text-white form-glass'}`}
+                    style={aboutSlideTab === idx ? { background: '#c82333', borderColor: '#c82333' } : {}}
+                  >
+                    สไลด์ที่ {idx}
+                  </button>
+                ))}
+              </div>
+
+              {/* Slide Content rendering */}
+              <div className="slide-content-area" style={{ minHeight: '400px' }}>
+                {aboutSlideTab === 1 && (
+                  <div className="animate-fade-in">
+                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                      <h3 className="fw-bold text-slate-950" style={{ color: '#0f172a' }}>ข้อมูลการนำเสนอโครงงาน</h3>
+                      <span className="badge bg-secondary px-3 py-2 fs-6">SLIDE 1 / 4</span>
+                    </div>
+                    <div className="p-3 bg-white rounded-3 shadow-sm" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                      <div className="row g-3">
+                        <div className="col-12 border-bottom pb-2">
+                          <span className="fw-bold text-danger d-block mb-1" style={{ fontSize: '1.1rem' }}>Project Topic (หัวข้อโครงงาน):</span>
+                          <span className="fs-5 text-slate-900 fw-semibold" style={{ color: '#1e293b' }}>
+                            ระบบวิเคราะห์ปริมาณการพิมพ์และคำนวณค่าบริการระดับองค์กร พร้อมการรักษาความปลอดภัยข้อมูลตามมาตรฐาน PDPA ด้วย AI Workflow
+                          </span>
+                        </div>
+                        <div className="col-12 col-md-6 border-end-md pb-2">
+                          <span className="fw-bold text-danger d-block mb-1" style={{ fontSize: '1.1rem' }}>Topic Number:</span>
+                          <span className="fs-5 text-slate-900 fw-semibold" style={{ color: '#1e293b' }}>Topic 7 (AI Engineering / LLM / RAG / AI Workflow)</span>
+                        </div>
+                        <div className="col-12 col-md-6 pb-2">
+                          <span className="fw-bold text-danger d-block mb-1" style={{ fontSize: '1.1rem' }}>Group Name:</span>
+                          <span className="fs-5 text-slate-900 fw-semibold" style={{ color: '#1e293b' }}>IRIS Subject 7 - Group Developer</span>
+                        </div>
+                        <div className="col-12 border-top pt-2">
+                          <span className="fw-bold text-danger d-block mb-1" style={{ fontSize: '1.1rem' }}>Date Submitted:</span>
+                          <span className="fs-5 text-slate-900 fw-semibold" style={{ color: '#1e293b' }}>11 มิถุนายน 2569</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {aboutSlideTab === 2 && (
+                  <div className="animate-fade-in">
+                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                      <h3 className="fw-bold text-slate-950" style={{ color: '#0f172a' }}>ภาพรวม ปัญหา และวัตถุประสงค์</h3>
+                      <span className="badge bg-secondary px-3 py-2 fs-6">SLIDE 2 / 4</span>
+                    </div>
+                    
+                    <div className="row g-4 mb-4">
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3 d-flex align-items-center" style={{ color: '#c82333' }}>
+                            <span className="me-2">📝</span> 1. Project Overview
+                          </h5>
+                          <div className="mb-3">
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Project Title:</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem' }}>Copier Portal: AI-Powered Copier Analytics & Privacy Masking Dashboard</p>
+                          </div>
+                          <div className="mb-3">
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Description (ภาษาไทย):</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                              ระบบแดชบอร์ดอัจฉริยะที่ใช้ AI Normalization ในการแปลงข้อมูลรายงานเครื่องพิมพ์ต่างรูปแบบให้อยู่ในฐานข้อมูลเดียวกัน ทำการเข้ารหัสข้อมูลส่วนบุคคล (PDPA Masking) อัตโนมัติก่อนส่งออก และประมวลผลข้อมูลเปรียบเทียบสถิติการเติบโตแบบปีต่อปี (Year-over-Year) เพื่อการควบคุมต้นทุน
+                            </p>
+                          </div>
+                          <div>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Business Context:</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem' }}>
+                              ใช้งานในหน่วยงานสนับสนุนไอทีและฝ่ายการเงินขององค์กรที่ต้องการรวมรวมสถิติการใช้วัสดุสิ้นเปลืองการพิมพ์จากเครื่องพิมพ์หลากหลายยี่ห้อ (เช่น RICOH, Fuji Xerox)
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3 d-flex align-items-center" style={{ color: '#c82333' }}>
+                            <span className="me-2">🚨</span> 2. Problem Statement
+                          </h5>
+                          <div className="mb-3">
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Current Problem:</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                              โครงสร้างรายงานการพิมพ์ (CSV/Excel) ของผู้ผลิตเครื่องพิมพ์แต่ละยี่ห้อมีคอลัมน์และหัวตารางที่สะกดต่างกัน ทำให้ต้องเขียนโค้ดเฉพาะเจาะจงหรือทำงานแบบแมนนวล และมีข้อมูลส่วนบุคคล เช่น User ID และชื่อพนักงานปะปนอยู่ซึ่งเสี่ยงต่อการผิดกฎหมาย PDPA หากไม่มีระบบกรองที่ดี
+                            </p>
+                          </div>
+                          <div className="mb-3">
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Impact of Problem:</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem' }}>
+                              เกิดความผิดพลาดในการรวมสถิติ เสียเวลาวิเคราะห์ และเสี่ยงต่อการรั่วไหลของข้อมูลระบุตัวตนพนักงานเมื่อส่งออกรายงานสรุปสถิติให้ฝ่ายการเงิน
+                            </p>
+                          </div>
+                          <div>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Proposed Solution:</strong>
+                            <p className="text-slate-800 mt-1" style={{ color: '#0f172a', fontSize: '0.95rem' }}>
+                              ใช้ AI ในการจับคู่โครงสร้างคอลัมน์ (Schema Mapping) แบบไดนามิก ผนวกกับระบบ Masking ข้อมูลตามบทบาทผู้ใช้ (Role-based access) เพื่อล้างข้อมูลพนักงานโดยยังสามารถจับคู่ประวัติและเปรียบเทียบค่าใช้จ่ายรายปี (YoY) ได้อย่างถูกต้อง
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="row g-4 align-items-center">
+                      <div className="col-12 col-lg-7">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3 d-flex align-items-center" style={{ color: '#c82333' }}>
+                            <span className="me-2">🎯</span> 3. Objectives — SMART Goals
+                          </h5>
+                          <ul className="ps-3 mb-0" style={{ color: '#0f172a', fontSize: '0.95rem' }}>
+                            <li className="mb-2"><strong>ลดเวลาการประมวลผลข้อมูล:</strong> จากการรวมรายงานต่างยี่ห้อแมนนวล 4 ชั่วโมงต่อเดือน เหลือไม่เกิน 2 นาทีด้วยระบบนำเข้าอัตโนมัติ (100% Automated)</li>
+                            <li className="mb-2"><strong>การันตีความปลอดภัย PDPA 100%:</strong> ข้อมูลระบุตัวตน (User ID และชื่อ) จะต้องถูกเข้ารหัส / Masking ก่อนการแปลงไฟล์หรือการส่งออกรายงานในกลุ่มผู้ใช้ปกติ</li>
+                            <li className="mb-2"><strong>วิเคราะห์ความคุ้มทุนข้ามปี (YoY Growth Analysis):</strong> ระบบต้องคำนวณและชี้วัดสัดส่วนการเติบโตหรือยอดลดลงของค่าบริการได้เป็นเปอร์เซ็นต์แบบปีต่อปีเทียบเดือนตรงกัน</li>
+                            <li><strong>ลดโอกาสการเกิดข้อผิดพลาด (SLA Accuracy):</strong> ข้อมูลจำนวนหน้าและราคาค่าบริการรวมต้องคำนวณถูกต้องตามตารางเรตบริการปัจจุบันด้วยความถูกต้อง 100%</li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="col-12 col-lg-5">
+                        <div className="bg-white p-2 rounded-3 shadow-sm text-center" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <img src="/images/dashboard_desktop.png" alt="Dashboard Desktop" className="img-fluid rounded-2 mb-2" style={{ maxHeight: '200px', objectFit: 'cover' }} />
+                          <div className="text-muted" style={{ fontSize: '0.8rem', color: '#475569' }}>รูปที่ 1: แดชบอร์ดสรุปยอดใช้งานและแนวโน้ม (Desktop View)</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {aboutSlideTab === 3 && (
+                  <div className="animate-fade-in">
+                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                      <h3 className="fw-bold text-slate-950" style={{ color: '#0f172a' }}>ขอบเขต เทคโนโลยี AI และขั้นตอนการทำงาน</h3>
+                      <span className="badge bg-secondary px-3 py-2 fs-6">SLIDE 3 / 4</span>
+                    </div>
+
+                    <div className="row g-4 mb-4">
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>🔍 4. Scope (ขอบเขตโปรเจกต์)</h5>
+                          <div className="mb-3">
+                            <strong className="text-primary d-block mb-1">In Scope:</strong>
+                            <ul className="ps-3 mb-0" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                              <li className="mb-1">การนำเข้าไฟล์ CSV/Excel ของเครื่องพิมพ์ยี่ห้อต่างๆ</li>
+                              <li className="mb-1">ระบบ AI Mapping หัวตารางเพื่อเก็บข้อมูลลง DB โครงสร้างกลาง</li>
+                              <li className="mb-1">กลไก Masking ข้อมูลผู้ใช้แยกบทบาท (Admin / User ทั่วไป)</li>
+                              <li className="mb-1">การแสดงผลกราฟแนวโน้ม และกราฟเปรียบเทียบสถิติรายปี (YoY)</li>
+                              <li>ระบบบันทึก Log กิจกรรมการนำเข้าและนำออกไฟล์</li>
+                            </ul>
+                          </div>
+                          <div>
+                            <strong className="text-danger d-block mb-1">Out of Scope:</strong>
+                            <ul className="ps-3 mb-0" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                              <li className="mb-1">การดึงยอดพิมพ์แบบ SNMP Real-time</li>
+                              <li>ระบบชำระเงินค่าบริการออนไลน์ (Payment Gateway)</li>
+                            </ul>
+                          </div>
+                          <div className="mt-3 bg-white p-2 rounded-2 text-center" style={{ border: '1px solid rgba(0,0,0,0.05)' }}>
+                            <img src="/images/dashboard_mobile.png" alt="Dashboard Mobile" className="img-fluid rounded-2 mb-1" style={{ maxHeight: '120px', objectFit: 'contain' }} />
+                            <div className="text-muted" style={{ fontSize: '0.75rem', color: '#475569' }}>รูปที่ 2: หน้าจอแสดงผล RWD (Mobile View)</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>🤖 5. AI / LLM / RAG Components</h5>
+                          <div className="mb-2" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>LLM Model Used:</strong> Gemini 1.5 Flash / GPT-4o-mini สำหรับการทำ Dynamic Header Extraction & Schema Mapping เพื่อแมปคอลัมน์ที่ไม่ตรงกัน
+                          </div>
+                          <div className="mb-2" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>RAG / Knowledge Base:</strong> ตารางอัตราเรตค่าบริการล่าสุด (Rates) และประวัติการพิมพ์ย้อนหลัง เพื่อใช้ในการวิเคราะห์ความผิดปกติ (Anomaly Detection)
+                          </div>
+                          <div className="mb-2" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Agent / Workflow:</strong> AI Agent สำหรับการวิเคราะห์หาปริมาณการพิมพ์และราคาบริการที่สูงผิดปกติข้ามรอบงวดรายงาน
+                          </div>
+                          <div className="mb-2" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                            <strong className="text-primary d-block mb-1">AI Processing Workflow:</strong>
+                            <span style={{ fontSize: '0.85rem', lineHeight: '1.4', display: 'block', paddingLeft: '8px' }}>
+                              • Input: ไฟล์รายงานการพิมพ์ดิบ (CSV/Excel) และอัตราเรตค่าบริการ<br />
+                              • AI Processing: LLM ทำ Schema Normalization และกรองความผิดปกติของข้อมูล<br />
+                              • Output: ข้อมูลประวัติที่ Masking แล้วพร้อมเข้า DB และคำแนะนำข้อสงสัย Anomaly<br />
+                              • Human Review: Admin ตรวจสอบคำเตือน Anomaly และอนุมัติกรณี Force Import
+                            </span>
+                          </div>
+                          <div style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Hallucination Mitigation:</strong> กำหนด Strict JSON Schema ใน Prompt บังคับให้ LLM คืนค่า 100% พร้อมทำ Rule-based boundaries check ใน backend
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-3 shadow-sm mb-2" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                      <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>⚙️ 6. Workflow & Architecture (ขั้นตอนการทำงาน)</h5>
+                      <div className="row g-3" style={{ fontSize: '0.88rem', color: '#0f172a' }}>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>1. Upload File (Ingestion)</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>ผู้ใช้ลากวางไฟล์ CSV/Excel รายงานของงวดเดือนและยี่ห้อใดๆ เข้าสู่ระบบ</p>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>2. AI Schema Normalization</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>AI Engine อ่านคอลัมน์ ยืนยันความถูกต้อง และจัดฟอร์แมตกลางลงฐานข้อมูล</p>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>3. PDPA Masking Engine</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>เข้ารหัส / Masking รหัสและชื่อพนักงานสำหรับสิทธิ์การดูแบบปกติ (SC-3 Display)</p>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>4. DB Ingestion & Cache Update</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>บันทึกลง Postgres และอัปเดตแคชตารางสรุปรายเดือน MonthlySummaries</p>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>5. YoY Analysis Rendering</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>ดึงค่าจาก API แสดงผลรายงาน เปรียบเทียบสถิติรายปี YoY</p>
+                          </div>
+                        </div>
+                        <div className="col-12 col-md-4">
+                          <div className="p-2 border rounded h-100">
+                            <strong>6. Security Logs & Export</strong>
+                            <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.8rem' }}>บันทึกประวัติการใช้สิทธิ์เข้าถึง และการนำออกรายงานสรุปการเงินของ Admin</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="mt-3 pt-2 border-top">
+                        <strong style={{ color: '#1e293b', fontSize: '0.9rem' }}>Architecture Notes:</strong>
+                        <p className="mb-0 mt-1 text-slate-800" style={{ fontSize: '0.85rem', lineHeight: '1.4', color: '#334155' }}>
+                          ระบบทำงานแบบ 3-tier architecture (React, Node.js/Express, PostgreSQL บน Neon Cloud Database) เพื่อเพิ่มประสิทธิภาพในการคิวรีสถิติข้ามปี (YoY) มีการนำเข้าข้อมูลดิบลง UsageDetails และแคชลง MonthlySummaries เพื่อประสิทธิภาพการคำนวณที่รวดเร็ว
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {aboutSlideTab === 4 && (
+                  <div className="animate-fade-in">
+                    <div className="d-flex justify-content-between align-items-center border-bottom pb-2 mb-3">
+                      <h3 className="fw-bold text-slate-950" style={{ color: '#0f172a' }}>เครื่องมือ ผลลัพธ์ แผนดำเนินงาน และสมาชิก</h3>
+                      <span className="badge bg-secondary px-3 py-2 fs-6">SLIDE 4 / 4</span>
+                    </div>
+
+                    <div className="row g-4 mb-4">
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>🛠️ 7. Tools & Technologies</h5>
+                          <div className="mb-2" style={{ fontSize: '0.9rem' }}>
+                            <strong className="d-block mb-1">Languages:</strong>
+                            <span className="badge bg-light text-dark border me-1">JavaScript (ES6)</span>
+                            <span className="badge bg-light text-dark border me-1">Python</span>
+                            <span className="badge bg-light text-dark border">SQL</span>
+                          </div>
+                          <div className="mb-2" style={{ fontSize: '0.9rem' }}>
+                            <strong className="d-block mb-1">Database & Storage:</strong>
+                            <span className="badge bg-light text-dark border">PostgreSQL (Neon Cloud Database)</span>
+                          </div>
+                          <div className="mb-2" style={{ fontSize: '0.9rem' }}>
+                            <strong className="d-block mb-1">Frameworks & Libraries:</strong>
+                            <span className="badge bg-light text-dark border me-1">React.js</span>
+                            <span className="badge bg-light text-dark border me-1">Express.js</span>
+                            <span className="badge bg-light text-dark border me-1">Chart.js</span>
+                            <span className="badge bg-light text-dark border">SheetJS (xlsx)</span>
+                          </div>
+                          <div style={{ fontSize: '0.9rem' }}>
+                            <strong className="d-block mb-1">Visualization & Output:</strong>
+                            <span className="badge bg-light text-dark border me-1">React Web Dashboard (RWD)</span>
+                            <span className="badge bg-light text-dark border me-1">Chart.js Graphs</span>
+                            <span className="badge bg-light text-dark border">XLSX Export (Excel)</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="col-12 col-md-6">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>📈 8. Expected Outcomes & Metrics</h5>
+                          <div className="mb-3">
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Deliverables:</strong>
+                            <p className="text-slate-800 mt-1 mb-0" style={{ color: '#0f172a', fontSize: '0.9rem', lineHeight: '1.4' }}>
+                              ระบบแดชบอร์ดสรุปวิเคราะห์ค่าบริการการพิมพ์ พร้อมระบบนำเข้าข้อมูลแบบอัตโนมัติ กรองข้อมูลพนักงานรองรับความปลอดภัย PDPA บันทึกกิจกรรมระบบเพื่อความโปร่งใส และนำออกข้อมูลในรูปแบบไฟล์ Excel (XLSX)
+                            </p>
+                          </div>
+                          <div>
+                            <strong className="text-slate-900" style={{ color: '#1e293b' }}>Success Metrics:</strong>
+                            <ul className="ps-3 mb-0" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                              <li className="mb-1"><strong>Import Schema Error &lt; 0.1%:</strong> ความแม่นยำในการวิเคราะห์ mapping โดย AI สูงมาก</li>
+                              <li><strong>100% compliance:</strong> ข้อมูลระบุตัวตนจะต้องได้รับการ Masking ป้องกันอย่างสมบูรณ์แบบในสิทธิ์ผู้ใช้ทั่วไป</li>
+                            </ul>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="row g-4 align-items-center mb-4">
+                      <div className="col-12 col-lg-7">
+                        <div className="p-3 bg-white rounded-3 shadow-sm h-100" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>📅 9. Project Timeline (8 สัปดาห์)</h5>
+                          <div className="row g-2" style={{ fontSize: '0.8rem', color: '#0f172a' }}>
+                            <div className="col-6">
+                              <div className="p-2 border rounded">
+                                <strong className="text-primary">W1-2: ฐานข้อมูลและการนำเข้า</strong>
+                                <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.75rem' }}>ออกแบบฐานข้อมูล ทำระบบ Dynamic Parser และ mock CSV ข้อมูลปริมาณการพิมพ์</p>
+                              </div>
+                            </div>
+                            <div className="col-6">
+                              <div className="p-2 border rounded">
+                                <strong className="text-primary">W3-4: UI/UX ความปลอดภัยและ Log</strong>
+                                <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.75rem' }}>UX RWD, ระบบ Masking ข้อมูลพนักงาน และระบบ Audit Activity Logs ในหลังบ้าน</p>
+                              </div>
+                            </div>
+                            <div className="col-6">
+                              <div className="p-2 border rounded">
+                                <strong className="text-danger">W5-6: YoY Analysis & Chart</strong>
+                                <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.75rem' }}>ระบบวิเคราะห์เติบโตข้ามปี YoY, กราฟเปรียบเทียบและตารางเปรียบเทียบปีต่อปี</p>
+                              </div>
+                            </div>
+                            <div className="col-6">
+                              <div className="p-2 border rounded">
+                                <strong className="text-danger">W7-8: AI Integration & Deploy</strong>
+                                <p className="mb-0 text-muted mt-1" style={{ fontSize: '0.75rem' }}>AI Schema mapping, รัน verify.ps1 เทส และขึ้น Vercel / Postgres Neon Cloud</p>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-12 col-lg-5">
+                        <div className="bg-white p-2 rounded-3 shadow-sm text-center" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                          <img src="/images/system_logs.png" alt="Activity Logs" className="img-fluid rounded-2 mb-2" style={{ maxHeight: '180px', objectFit: 'cover' }} />
+                          <div className="text-muted" style={{ fontSize: '0.8rem', color: '#475569' }}>รูปที่ 3: ระบบบันทึกเหตุการณ์ความปลอดภัย (System Activity Logs)</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-3 bg-white rounded-3 shadow-sm" style={{ border: '1px solid rgba(0,0,0,0.1)' }}>
+                      <h5 className="fw-bold text-danger mb-3" style={{ color: '#c82333' }}>👥 10. Team Members (สมาชิกผู้ร่วมพัฒนาโครงงาน)</h5>
+                      <div className="table-responsive">
+                        <table className="table table-bordered table-sm mb-0 text-slate-800" style={{ fontSize: '0.9rem', color: '#0f172a' }}>
+                          <thead className="table-light">
+                            <tr>
+                              <th>ลำดับ</th>
+                              <th>ชื่อ-นามสกุล</th>
+                              <th>ตำแหน่งงาน</th>
+                              <th>บทบาทในโปรเจกต์</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="text-center">1</td>
+                              <td className="fw-bold">คุณหัสชัย ปาณะศรี</td>
+                              <td>เจ้าหน้าที่สนับสนุนงานเทคโนโลยีสารสนเทศ</td>
+                              <td className="text-primary fw-medium">AI Engineer & Backend Developer</td>
+                            </tr>
+                            <tr>
+                              <td className="text-center">2</td>
+                              <td className="fw-bold">คุณคณพศ ไพนุสิน</td>
+                              <td>ผู้ช่วยผู้จัดการแผนกเทคโนโลยีสารสนเทศ (ตรัง)</td>
+                              <td className="text-primary fw-medium">Frontend Developer & UX/UI Designer</td>
+                            </tr>
+                            <tr>
+                              <td className="text-center">3</td>
+                              <td className="fw-bold">คุณบุญชัย ศักดิ์สมานชัย</td>
+                              <td>ผู้จัดการส่วนงานเทคโนโลยีสารสนเทศ (กรุงเทพฯ)</td>
+                              <td className="text-primary fw-medium">Project Manager & Product Owner</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Prev / Next Slide Navigation Controls */}
+              <div className="d-flex justify-content-between align-items-center border-top pt-3 mt-4">
+                <button
+                  onClick={() => setAboutSlideTab(prev => Math.max(1, prev - 1))}
+                  className="btn btn-outline-light text-white form-glass py-2 px-4 fw-bold"
+                  disabled={aboutSlideTab === 1}
+                >
+                  ◀ ย้อนกลับ (Prev)
+                </button>
+                <span className="fw-bold text-white fs-5">สไลด์ {aboutSlideTab} / 4</span>
+                <button
+                  onClick={() => setAboutSlideTab(prev => Math.min(4, prev + 1))}
+                  className="btn btn-outline-light text-white form-glass py-2 px-4 fw-bold"
+                  disabled={aboutSlideTab === 4}
+                >
+                  ถัดไป (Next) ▶
                 </button>
               </div>
-            </div>
-
-            {/* Slide Selector Buttons */}
-            <div className="d-flex flex-wrap gap-2 mb-4">
-              <button 
-                onClick={() => setAboutSlideTab(1)} 
-                className={`btn btn-sm px-3 py-2 fw-semibold rounded-3 transition-smooth ${aboutSlideTab === 1 ? 'btn-danger text-white' : 'btn-outline-secondary bg-white text-secondary'}`}
-                style={aboutSlideTab === 1 ? { background: 'var(--accent-red)' } : { borderColor: 'var(--glass-border)' }}
-              >
-                SLIDE 1: ข้อมูลนำเสนอ
-              </button>
-              <button 
-                onClick={() => setAboutSlideTab(2)} 
-                className={`btn btn-sm px-3 py-2 fw-semibold rounded-3 transition-smooth ${aboutSlideTab === 2 ? 'btn-danger text-white' : 'btn-outline-secondary bg-white text-secondary'}`}
-                style={aboutSlideTab === 2 ? { background: 'var(--accent-red)' } : { borderColor: 'var(--glass-border)' }}
-              >
-                SLIDE 2: ภาพรวมและวัตถุประสงค์
-              </button>
-              <button 
-                onClick={() => setAboutSlideTab(3)} 
-                className={`btn btn-sm px-3 py-2 fw-semibold rounded-3 transition-smooth ${aboutSlideTab === 3 ? 'btn-danger text-white' : 'btn-outline-secondary bg-white text-secondary'}`}
-                style={aboutSlideTab === 3 ? { background: 'var(--accent-red)' } : { borderColor: 'var(--glass-border)' }}
-              >
-                SLIDE 3: ขอบเขตและขั้นตอนการทำงาน
-              </button>
-              <button 
-                onClick={() => setAboutSlideTab(4)} 
-                className={`btn btn-sm px-3 py-2 fw-semibold rounded-3 transition-smooth ${aboutSlideTab === 4 ? 'btn-danger text-white' : 'btn-outline-secondary bg-white text-secondary'}`}
-                style={aboutSlideTab === 4 ? { background: 'var(--accent-red)' } : { borderColor: 'var(--glass-border)' }}
-              >
-                SLIDE 4: เครื่องมือ สมาชิก & แผนงาน
-              </button>
-            </div>
-
-            {/* Slide Panel */}
-            <div className="glass-card p-4 shadow-sm" style={{ borderLeft: '4px solid var(--accent-red)', background: '#ffffff' }}>
-              
-              {/* SLIDE 1 */}
-              {aboutSlideTab === 1 && (
-                <div className="animate-fade-in">
-                  <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 className="fw-bold mb-0 text-dark">ข้อมูลการนำเสนอโครงงาน</h4>
-                    <span className="badge bg-light text-secondary border px-2 py-1">SLIDE 1</span>
-                  </div>
-
-                  <div className="row g-3">
-                    <div className="col-12">
-                      <div className="p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <div className="row g-3">
-                          <div className="col-12 col-md-6 border-bottom border-md-bottom-0 pb-2 pb-md-0">
-                            <span className="text-secondary d-block fw-semibold" style={{ fontSize: '0.85rem' }}>Project Topic (หัวข้อโครงงาน):</span>
-                            <span className="text-dark fs-6">ระบบวิเคราะห์ปริมาณการพิมพ์และคำนวณค่าบริการระดับองค์กร พร้อมการรักษาความปลอดภัยข้อมูลตามมาตรฐาน PDPA ด้วย AI Workflow</span>
-                          </div>
-                          <div className="col-12 col-md-6 border-bottom border-md-bottom-0 pb-2 pb-md-0">
-                            <span className="text-secondary d-block fw-semibold" style={{ fontSize: '0.85rem' }}>Topic Number:</span>
-                            <span className="text-dark fs-6">Topic 7 (AI Engineering / LLM / RAG / AI Workflow)</span>
-                          </div>
-                          <div className="col-12 col-md-6 border-bottom border-md-bottom-0 pb-2 pb-md-0">
-                            <span className="text-secondary d-block fw-semibold" style={{ fontSize: '0.85rem' }}>Group Name (ชื่อกลุ่ม):</span>
-                            <span className="text-dark fs-6">IRIS Subject 7 - Group Developer</span>
-                          </div>
-                          <div className="col-12 col-md-6">
-                            <span className="text-secondary d-block fw-semibold" style={{ fontSize: '0.85rem' }}>Date Submitted:</span>
-                            <span className="text-dark fs-6">11 มิถุนายน 2569</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Team Table */}
-                  <div className="mt-4">
-                    <h5 className="fw-bold mb-3 d-flex align-items-center gap-2">
-                      <UserIcon size={18} className="text-danger" />
-                      <span>สมาชิกผู้ร่วมพัฒนาโครงงาน (Team Members)</span>
-                    </h5>
-                    <div className="table-responsive">
-                      <table className="table table-bordered align-middle mb-0" style={{ fontSize: '0.9rem' }}>
-                        <thead className="table-light">
-                          <tr>
-                            <th className="py-2 text-center" style={{ width: '8%' }}>ลำดับ</th>
-                            <th style={{ width: '25%' }}>ชื่อ - นามสกุล</th>
-                            <th style={{ width: '42%' }}>ตำแหน่งงาน</th>
-                            <th style={{ width: '25%' }}>บทบาทใน Project</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr>
-                            <td className="text-center">1</td>
-                            <td className="fw-bold text-dark">คุณหัสชัย ปาณะศรี</td>
-                            <td>เจ้าหน้าที่สนับสนุนงานเทคโนโลยีสารสนเทศ</td>
-                            <td className="text-danger fw-semibold">AI Engineer & Backend Developer</td>
-                          </tr>
-                          <tr>
-                            <td className="text-center">2</td>
-                            <td className="fw-bold text-dark">คุณคณพศ ไพนุสิน</td>
-                            <td>ผู้ช่วยผู้จัดการแผนกเทคโนโลยีสารสนเทศ (ตรัง)</td>
-                            <td className="text-danger fw-semibold">Frontend Developer & UX/UI Designer</td>
-                          </tr>
-                          <tr>
-                            <td className="text-center">3</td>
-                            <td className="fw-bold text-dark">คุณบุญชัย ศักดิ์สมานชัย</td>
-                            <td>ผู้จัดการส่วนงานเทคโนโลยีสารสนเทศ (กรุงเทพฯ)</td>
-                            <td className="text-danger fw-semibold">Project Manager & Product Owner</td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SLIDE 2 */}
-              {aboutSlideTab === 2 && (
-                <div className="animate-fade-in">
-                  <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 className="fw-bold mb-0 text-dark">ภาพรวม ปัญหา และวัตถุประสงค์</h4>
-                    <span className="badge bg-light text-secondary border px-2 py-1">SLIDE 2</span>
-                  </div>
-
-                  <div className="row g-4">
-                    {/* Project Overview */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <FileText size={16} />
-                          <span>1. Project Overview</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-2" style={{ fontSize: '0.9rem' }}>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>Project Title:</strong>
-                            <p className="mb-0 text-dark fw-semibold">Copier Portal: AI-Powered Copier Analytics & Privacy Masking Dashboard</p>
-                          </div>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>คำอธิบาย (ภาษาไทย):</strong>
-                            <p className="mb-0 text-dark" style={{ textAlign: 'justify' }}>ระบบแดชบอร์ดอัจฉริยะที่ใช้ AI Normalization ในการแปลงข้อมูลรายงานเครื่องพิมพ์ต่างรูปแบบให้อยู่ในฐานข้อมูลเดียวกัน ทำการเข้ารหัสข้อมูลส่วนบุคคล (PDPA Masking) อัตโนมัติก่อนส่งออก และประมวลผลข้อมูลเปรียบเทียบสถิติการเติบโตแบบปีต่อปี (Year-over-Year) เพื่อการควบคุมต้นทุน</p>
-                          </div>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>บริบททางธุรกิจ (Business Context):</strong>
-                            <p className="mb-0 text-dark">ใช้งานในหน่วยงานสนับสนุนไอทีและฝ่ายการเงินขององค์กรที่ต้องการรวมรวมสถิติการใช้วัสดุสิ้นเปลืองการพิมพ์จากเครื่องพิมพ์หลากหลายยี่ห้อ (เช่น RICOH, Fuji Xerox)</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Problem Statement */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <AlertCircle size={16} />
-                          <span>2. Problem Statement</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-2" style={{ fontSize: '0.9rem' }}>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>ปัญหาปัจจุบัน:</strong>
-                            <p className="mb-0 text-dark" style={{ textAlign: 'justify' }}>โครงสร้างรายงานการพิมพ์ (CSV/Excel) ของผู้ผลิตเครื่องพิมพ์แต่ละยี่ห้อมีคอลัมน์และหัวตารางที่สะกดต่างกัน ทำให้ต้องเขียนโค้ดเฉพาะเจาะจงหรือทำงานแบบแมนนวล และมีข้อมูลส่วนบุคคล เช่น User ID และชื่อพนักงานปะปนอยู่ซึ่งเสี่ยงต่อการผิดกฎหมาย PDPA หากไม่มีระบบกรองที่ดี</p>
-                          </div>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>ผลกระทบ:</strong>
-                            <p className="mb-0 text-dark">เกิดความผิดพลาดในการรวมสถิติ เสียเวลาวิเคราะห์ และเสี่ยงต่อการรั่วไหลของข้อมูลระบุตัวตนพนักงานเมื่อส่งออกรายงานสรุปสถิติให้ฝ่ายการเงิน</p>
-                          </div>
-                          <div>
-                            <strong className="text-secondary" style={{ fontSize: '0.8rem' }}>แนวทางแก้ไข:</strong>
-                            <p className="mb-0 text-dark">ใช้ AI ในการจับคู่โครงสร้างคอลัมน์ (Schema Mapping) แบบไดนามิก ผนวกกับระบบ Masking ข้อมูลตามบทบาทผู้ใช้ (Role-based access) เพื่อล้างข้อมูลพนักงานโดยยังสามารถจับคู่ประวัติและเปรียบเทียบค่าใช้จ่ายรายปี (YoY) ได้อย่างถูกต้อง</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Desktop Mockup Image */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-2 border rounded-3 bg-white text-center h-100 d-flex flex-column justify-content-between shadow-sm">
-                        <img 
-                          src="/images/dashboard_desktop.png" 
-                          alt="หน้าจอแดชบอร์ดสรุปยอดใช้งานและกราฟแนวโน้ม" 
-                          className="img-fluid rounded" 
-                          style={{ maxHeight: '200px', objectFit: 'contain', margin: 'auto', display: 'block' }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/logo.png';
-                          }}
-                        />
-                        <div className="text-secondary mt-2 fw-medium" style={{ fontSize: '0.78rem' }}>
-                          รูปที่ 1: หน้าจอรายงานสรุปยอดการใช้งานเครื่องพิมพ์พร้อมกราฟวิเคราะห์แนวโน้ม (Desktop View)
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* SMART Goals */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <CheckCircle2 size={16} />
-                          <span>3. SMART Goals (เป้าหมายโปรเจกต์)</span>
-                        </h6>
-                        <ul className="mb-0" style={{ fontSize: '0.88rem', paddingLeft: '1.2rem' }}>
-                          <li className="mb-2">
-                            <strong>ลดเวลาการประมวลผลข้อมูล:</strong> จากการรวมรายงานต่างยี่ห้อแบบแมนนวล 4 ชั่วโมงต่อเดือน เหลือไม่เกิน 2 นาทีด้วยระบบนำเข้าอัตโนมัติ (100% Automated)
-                          </li>
-                          <li className="mb-2">
-                            <strong>การันตีความปลอดภัย PDPA 100%:</strong> ข้อมูลระบุตัวตน (User ID และชื่อ) จะต้องถูกเข้ารหัส / Masking ก่อนการแปลงไฟล์หรือการส่งออกรายงานในกลุ่มผู้ใช้ปกติ
-                          </li>
-                          <li className="mb-2">
-                            <strong>วิเคราะห์ความคุ้มทุนข้ามปี (YoY Growth Analysis):</strong> ระบบต้องคำนวณและชี้วัดสัดส่วนการเติบโตหรือยอดลดลงของค่าบริการได้เป็นเปอร์เซ็นต์แบบปีต่อปีเทียบเดือนตรงกัน
-                          </li>
-                          <li>
-                            <strong>ลดโอกาสการเกิดข้อผิดพลาด (SLA Accuracy):</strong> ข้อมูลจำนวนหน้าและราคาค่าบริการรวมต้องคำนวณถูกต้องตามตารางเรตบริการปัจจุบันด้วยความถูกต้อง 100%
-                          </li>
-                        </ul>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SLIDE 3 */}
-              {aboutSlideTab === 3 && (
-                <div className="animate-fade-in">
-                  <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 className="fw-bold mb-0 text-dark">ขอบเขต เทคโนโลยี AI และขั้นตอนการทำงาน</h4>
-                    <span className="badge bg-light text-secondary border px-2 py-1">SLIDE 3</span>
-                  </div>
-
-                  <div className="row g-4">
-                    {/* Project Scope */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <Layers size={16} />
-                          <span>4. Scope (ขอบเขตโปรเจกต์)</span>
-                        </h6>
-                        <div className="row">
-                          <div className="col-6">
-                            <strong className="text-danger d-block mb-1.5" style={{ fontSize: '0.85rem' }}>In Scope (ภายในขอบเขต):</strong>
-                            <ul style={{ fontSize: '0.82rem', paddingLeft: '1rem' }} className="mb-0">
-                              <li className="mb-1">นำเข้าไฟล์รายงานเครื่องพิมพ์ต่างยี่ห้อ (CSV/Excel)</li>
-                              <li className="mb-1">ระบบ AI Schema mapping แปลงเป็นคอลัมน์มาตรฐานกลาง</li>
-                              <li className="mb-1">ระบบ Masking ข้อมูลแยกตามบทบาทผู้ใช้</li>
-                              <li className="mb-1">วิเคราะห์และสรุปยอด YoY เปรียบเทียบรายปี</li>
-                              <li>บันทึก Log การนำเข้าและส่งออกระบบ</li>
-                            </ul>
-                          </div>
-                          <div className="col-6">
-                            <strong className="text-secondary d-block mb-1.5" style={{ fontSize: '0.85rem' }}>Out of Scope (นอกขอบเขต):</strong>
-                            <ul style={{ fontSize: '0.82rem', paddingLeft: '1rem' }} className="mb-0 text-muted">
-                              <li className="mb-1">ดึงข้อมูลการพิมพ์ผ่าน SNMP Real-time</li>
-                              <li>ระบบชำระเงินออนไลน์ (Payment Gateway)</li>
-                            </ul>
-                          </div>
-                        </div>
-
-                        <div className="p-2 border rounded-3 bg-white text-center mt-3 shadow-sm">
-                          <img 
-                            src="/images/dashboard_mobile.png" 
-                            alt="หน้าจอแดชบอร์ดบนสมาร์ทโฟน RWD Mobile" 
-                            className="img-fluid rounded" 
-                            style={{ maxHeight: '150px', objectFit: 'contain', margin: 'auto', display: 'block' }}
-                            onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = '/logo.png';
-                            }}
-                          />
-                          <div className="text-secondary mt-1 fw-medium" style={{ fontSize: '0.72rem' }}>
-                            รูปที่ 2: หน้าจอแสดงผล RWD (Mobile View)
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AI / LLM Components */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <Shield size={16} />
-                          <span>5. AI / LLM / RAG Components</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-2" style={{ fontSize: '0.85rem' }}>
-                          <div>
-                            <strong className="text-dark">LLM Model Used:</strong>
-                            <p className="mb-0 text-muted">Gemini 1.5 Flash / GPT-4o-mini สำหรับการทำ Dynamic Header Extraction & Schema Mapping เพื่อแมปคอลัมน์ที่ไม่ตรงกันให้อยู่ในมาตรฐานเดียวกัน</p>
-                          </div>
-                          <div>
-                            <strong className="text-dark">RAG / Knowledge Base:</strong>
-                            <p className="mb-0 text-muted">ตารางอัตราเรตค่าบริการล่าสุด (Rates) และประวัติการพิมพ์ย้อนหลัง เพื่อใช้ในการวิเคราะห์ความผิดปกติ (Anomaly Detection)</p>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Agent / Workflow:</strong>
-                            <p className="mb-0 text-muted">AI Agent สำหรับการวิเคราะห์หาปริมาณการพิมพ์และราคาบริการที่สูงผิดปกติข้ามรอบงวดรายงาน (Usage & Cost Anomaly Alert Agent)</p>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Hallucination Mitigation:</strong>
-                            <p className="mb-0 text-muted">กำหนด Strict JSON schema ใน Prompt บังคับให้ LLM คืนค่าแมปปิ้งโครงสร้าง 100% พร้อมสร้างระบบควบคุมขีดจำกัดความถูกต้อง (Rule-based boundaries check) ใน backend</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Steps Workflow */}
-                    <div className="col-12">
-                      <div className="p-3 rounded-3" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-3 d-flex align-items-center gap-2">
-                          <Calendar size={16} />
-                          <span>6. Workflow & Architecture (ขั้นตอนการประมวลผลและสถาปัตยกรรม)</span>
-                        </h6>
-                        <div className="row g-2 text-center" style={{ fontSize: '0.82rem' }}>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>1</span>
-                              <div className="fw-bold mt-1 text-dark">Upload File</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>นำเข้าไฟล์ CSV/Excel รายงาน</small>
-                            </div>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>2</span>
-                              <div className="fw-bold mt-1 text-dark">AI Schema</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>แมปหัวคอลัมน์มาตรฐาน</small>
-                            </div>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>3</span>
-                              <div className="fw-bold mt-1 text-dark">PDPA Masking</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>ล้าง/เข้ารหัสข้อมูลพนักงาน</small>
-                            </div>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>4</span>
-                              <div className="fw-bold mt-1 text-dark">DB Ingestion</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>บันทึกลง Postgres DB</small>
-                            </div>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>5</span>
-                              <div className="fw-bold mt-1 text-dark">YoY Graph</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>ประมวลผล YoY & แสดงกราฟ</small>
-                            </div>
-                          </div>
-                          <div className="col-6 col-md-2">
-                            <div className="p-2 border rounded bg-white h-100 d-flex flex-column justify-content-between shadow-xs">
-                              <span className="badge bg-danger rounded-circle mx-auto d-flex align-items-center justify-content-center" style={{ width: '22px', height: '22px', fontSize: '0.75rem' }}>6</span>
-                              <div className="fw-bold mt-1 text-dark">Security Logs</div>
-                              <small className="text-muted d-block" style={{ fontSize: '0.72rem' }}>บันทึก Log การนำออก/กระทำ</small>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 text-dark" style={{ fontSize: '0.88rem', lineHeight: '1.5' }}>
-                          <strong>Architecture Notes:</strong> ระบบทำงานแบบ 3-tier architecture (React, Node.js/Express, PostgreSQL) เชื่อมต่อ Neon Cloud Database เพื่อความมั่นคงสูง และเพื่อเพิ่มประสิทธิภาพสูงสุดในการวิเคราะห์เปรียบเทียบสถิติรายปี (YoY) มีการออกแบบตารางสรุปข้อมูลประจำเดือน <code>MonthlySummaries</code> เพื่อช่วยลดปริมาณการคิวรีลงตารางหลัก <code>UsageDetails</code> ที่มีข้อมูลดิบปริมาณมหาศาล ป้องกันคิวรีค้าง
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* SLIDE 4 */}
-              {aboutSlideTab === 4 && (
-                <div className="animate-fade-in">
-                  <div className="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                    <h4 className="fw-bold mb-0 text-dark">เครื่องมือ ผลลัพธ์ และแผนการดำเนินงาน</h4>
-                    <span className="badge bg-light text-secondary border px-2 py-1">SLIDE 4</span>
-                  </div>
-
-                  <div className="row g-4">
-                    {/* Tools */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <Layers size={16} />
-                          <span>7. Tools & Technologies</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-2" style={{ fontSize: '0.88rem' }}>
-                          <div>
-                            <strong className="text-dark">Programming Languages:</strong>
-                            <div className="d-flex flex-wrap gap-1 mt-1">
-                              <span className="badge bg-danger">JavaScript (ES6)</span>
-                              <span className="badge bg-danger">Python (Data Gen)</span>
-                              <span className="badge bg-danger">SQL (Neon Postgres)</span>
-                            </div>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Database & Storage:</strong>
-                            <div className="d-flex flex-wrap gap-1 mt-1">
-                              <span className="badge bg-danger">PostgreSQL (Neon Cloud DB)</span>
-                            </div>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Frameworks / Libraries:</strong>
-                            <div className="d-flex flex-wrap gap-1 mt-1">
-                              <span className="badge bg-danger">React.js</span>
-                              <span className="badge bg-danger">Express.js (Node.js)</span>
-                              <span className="badge bg-danger">Chart.js / react-chartjs-2</span>
-                              <span className="badge bg-danger">SheetJS (xlsx)</span>
-                            </div>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Visualization / Output:</strong>
-                            <div className="d-flex flex-wrap gap-1 mt-1">
-                              <span className="badge bg-danger">React Dashboard (RWD)</span>
-                              <span className="badge bg-danger">Interactive Graphs</span>
-                              <span className="badge bg-danger">XLSX Export API</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Expected Outcomes */}
-                    <div className="col-12 col-md-6">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-2.5 d-flex align-items-center gap-2">
-                          <CheckCircle2 size={16} />
-                          <span>8. Expected Outcomes (ผลลัพธ์และตัวชี้วัด)</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-3" style={{ fontSize: '0.88rem' }}>
-                          <div>
-                            <strong className="text-dark">Deliverables (ผลส่งมอบ):</strong>
-                            <p className="mb-0 text-muted">ระบบหน้าเว็บสำหรับพนักงานและผู้บริหาร (Web Dashboard Portal) พร้อมฟังก์ชันคำนวณอัตโนมัติ, สคริปต์ความปลอดภัยในการเคลียร์และสร้างข้อมูลจำลอง, และรายงานผลในรูปแบบไฟล์ Excel (XLSX) แยกรายปี/รายเดือน</p>
-                          </div>
-                          <div>
-                            <strong className="text-dark">Success Metrics (ดัชนีวัดผลสำเร็จ):</strong>
-                            <ul className="mb-0 text-muted mt-1" style={{ paddingLeft: '1.2rem' }}>
-                              <li className="mb-1"><strong>import error &lt; 0.1%:</strong> การนำเข้าไฟล์และจัดรูปแบบหัวคอลัมน์โดย AI มีความถูกต้องและแม่นยำสูง</li>
-                              <li><strong>100% compliance:</strong> ข้อมูล User ID/Name ที่ปรากฏบนการดาวน์โหลดไฟล์สำหรับกลุ่มผู้ใช้ทั่วไปจะต้องไม่มีการรั่วไหล</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="col-12 col-md-7">
-                      <div className="p-3 rounded-3 h-100" style={{ background: '#f8fafc', border: '1px solid var(--glass-border)' }}>
-                        <h6 className="fw-bold text-danger mb-3 d-flex align-items-center gap-2">
-                          <Calendar size={16} />
-                          <span>9. Timeline (แผนงานดำเนินงาน 8 สัปดาห์)</span>
-                        </h6>
-                        <div className="d-flex flex-column gap-2.5" style={{ fontSize: '0.85rem' }}>
-                          <div>
-                            <strong className="text-danger fw-semibold d-block">สัปดาห์ที่ 1-2: ฐานข้อมูลและการนำเข้า</strong>
-                            <p className="mb-0 text-muted" style={{ paddingLeft: '8px' }}>ออกแบบฐานข้อมูล สร้างตาราง และทำระบบ Dynamic Parser ในการรับไฟล์ พร้อมสร้าง mock CSV ข้อมูลปริมาณการพิมพ์</p>
-                          </div>
-                          <div>
-                            <strong className="text-danger fw-semibold d-block">สัปดาห์ที่ 3-4: UI/UX ความเป็นส่วนตัวและ Log</strong>
-                            <p className="mb-0 text-muted" style={{ paddingLeft: '8px' }}>ปรับปรุง UX ให้รองรับ Mobile (RWD), เพิ่มกลไก Masking ตามบทบาทผู้ใช้ และระบบ Audit Activity Logs ใน backend</p>
-                          </div>
-                          <div>
-                            <strong className="text-danger fw-semibold d-block">สัปดาห์ที่ 5-6: การประมวลผลและการเปรียบเทียบ (YoY)</strong>
-                            <p className="mb-0 text-muted" style={{ paddingLeft: '8px' }}>ทำระบบคำนวณเปอร์เซ็นต์ YoY, กราฟเปรียบเทียบรายปีบน Dashboard และตารางสถิติสรุปเปรียบเทียบปีต่อปี</p>
-                          </div>
-                          <div>
-                            <strong className="text-danger fw-semibold d-block">สัปดาห์ที่ 7-8: AI Integration, ทดสอบ และส่งงาน</strong>
-                            <p className="mb-0 text-muted" style={{ paddingLeft: '8px' }}>เชื่อมต่อ AI Schema mapping, รัน verify.ps1 ทดสอบ integration test, ทำการแก้ไขข้อผิดพลาด และนำขึ้น Vercel/Postgres Cloud</p>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Logs Mockup Image */}
-                    <div className="col-12 col-md-5">
-                      <div className="p-2 border rounded-3 bg-white text-center h-100 d-flex flex-column justify-content-between shadow-sm">
-                        <img 
-                          src="/images/system_logs.png" 
-                          alt="หน้าจอประวัติการทำรายการความปลอดภัย" 
-                          className="img-fluid rounded" 
-                          style={{ maxHeight: '200px', objectFit: 'contain', margin: 'auto', display: 'block' }}
-                          onError={(e) => {
-                            e.target.onerror = null;
-                            e.target.src = '/logo.png';
-                          }}
-                        />
-                        <div className="text-secondary mt-2 fw-medium" style={{ fontSize: '0.78rem' }}>
-                          รูปที่ 3: ระบบบันทึกประวัติการเข้าใช้งานและกิจกรรม (System Activity Logs) สำหรับแอดมิน
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
             </div>
           </div>
         )}
@@ -3619,56 +3061,28 @@ function App() {
                     <strong>💡 เปลี่ยนชื่อไฟล์อัตโนมัติ:</strong> ระบบจะเปลี่ยนชื่อไฟล์นำเข้าจาก <code>{uploadConflict.filename}</code> เป็น <code>{uploadConflict.renamedFilename}</code> เพื่อระบุรอบงวดและไม่ให้ชื่อไฟล์ซ้ำซ้อน
                   </div>
                 )}
-                 <div className="d-flex flex-column gap-2">
-                  {isImporting ? (
-                    <div className="p-3 mt-2 glass-card text-start" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)' }}>
-                      <div className="d-flex justify-content-between align-items-center mb-2">
-                        <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
-                          {importProgress < 40 ? '📤 กำลังอัปโหลดไฟล์...' : '⚙️ กำลังบันทึกทับข้อมูลเดิม...'}
-                        </span>
-                        <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
-                      </div>
-                      <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
-                        <div 
-                          className="progress-bar progress-bar-striped progress-bar-animated" 
-                          role="progressbar" 
-                          style={{ 
-                            width: `${importProgress}%`, 
-                            transition: 'width 0.2s ease-in-out',
-                            background: 'linear-gradient(90deg, #ff3366, #ff0033)',
-                            borderRadius: '5px'
-                          }} 
-                          aria-valuenow={importProgress} 
-                          aria-valuemin="0" 
-                          aria-valuemax="100"
-                        ></div>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <button 
-                        onClick={handleConfirmForceUpload} 
-                        className="btn btn-danger py-2 w-100 fw-bold"
-                      >
-                        ตกลงนำเข้า (เขียนทับทั้งหมด)
-                      </button>
-                      {hasDetails && (
-                        <button 
-                          onClick={() => setShowComparisonTable(true)} 
-                          className="btn btn-glass-primary py-2 w-100 fw-bold text-white"
-                          style={{ background: 'var(--accent-red)' }}
-                        >
-                          🔍 ตรวจสอบข้อมูลซ้ำ
-                        </button>
-                      )}
-                      <button 
-                        onClick={handleCancelUpload} 
-                        className="btn btn-outline-secondary py-2 w-100"
-                      >
-                        ยกเลิก
-                      </button>
-                    </>
+                <div className="d-flex flex-column gap-2">
+                  <button 
+                    onClick={handleConfirmForceUpload} 
+                    className="btn btn-danger py-2 w-100 fw-bold"
+                  >
+                    ตกลงนำเข้า (เขียนทับทั้งหมด)
+                  </button>
+                  {hasDetails && (
+                    <button 
+                      onClick={() => setShowComparisonTable(true)} 
+                      className="btn btn-glass-primary py-2 w-100 fw-bold text-white"
+                      style={{ background: 'var(--accent-red)' }}
+                    >
+                      🔍 ตรวจสอบข้อมูลซ้ำ
+                    </button>
                   )}
+                  <button 
+                    onClick={handleCancelUpload} 
+                    className="btn btn-outline-secondary py-2 w-100"
+                  >
+                    ยกเลิก
+                  </button>
                 </div>
               </div>
             </div>
@@ -3896,276 +3310,25 @@ function App() {
                 </div>
               </div>
 
-              <div className="d-flex justify-content-center w-100">
-                {isImporting ? (
-                  <div className="p-3 w-100 glass-card text-start" style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '8px', border: '1px solid rgba(255, 255, 255, 0.05)', maxWidth: '500px' }}>
-                    <div className="d-flex justify-content-between align-items-center mb-2">
-                      <span className="text-muted fw-semibold" style={{ fontSize: '0.85rem' }}>
-                        {importProgress < 40 ? '📤 กำลังอัปโหลดข้อมูล...' : '⚙️ กำลังเขียนทับข้อมูลเฉพาะที่เลือก...'}
-                      </span>
-                      <span className="text-white fw-bold" style={{ fontSize: '0.9rem' }}>{importProgress}%</span>
-                    </div>
-                    <div className="progress form-glass" style={{ height: '10px', borderRadius: '5px', overflow: 'hidden', background: 'rgba(255,255,255,0.1)' }}>
-                      <div 
-                        className="progress-bar progress-bar-striped progress-bar-animated" 
-                        role="progressbar" 
-                        style={{ 
-                          width: `${importProgress}%`, 
-                          transition: 'width 0.2s ease-in-out',
-                          background: 'linear-gradient(90deg, #ff3366, #ff0033)',
-                          borderRadius: '5px'
-                        }} 
-                        aria-valuenow={importProgress} 
-                        aria-valuemin="0" 
-                        aria-valuemax="100"
-                      ></div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="d-flex justify-content-center gap-3">
-                    <button 
-                      onClick={handleConfirmForceUpload} 
-                      className="btn btn-danger py-2 px-4 fw-bold"
-                      disabled={selectedUserIdsForImport.length === 0}
-                    >
-                      นำเข้าเฉพาะข้อมูลที่เลือก
-                    </button>
-                    <button 
-                      onClick={() => setShowComparisonTable(false)} 
-                      className="btn btn-outline-secondary py-2 px-4"
-                    >
-                      ย้อนกลับ
-                    </button>
-                    <button 
-                      onClick={handleCancelUpload} 
-                      className="btn btn-outline-secondary py-2 px-4"
-                    >
-                      ยกเลิก
-                    </button>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Report Details Preview Modal Overlay */}
-      {previewReport && (() => {
-        const filteredDetails = previewDetails.filter(r => {
-          const query = previewSearch.toLowerCase().trim();
-          if (!query) return true;
-          const userId = String(r.user_id || '').toLowerCase();
-          const name = String(r.name || '').toLowerCase();
-          return userId.includes(query) || name.includes(query);
-        });
-
-        const totalBw = previewDetails.reduce((sum, r) => sum + (r.print_bw || 0), 0);
-        const totalColor = previewDetails.reduce((sum, r) => sum + (r.print_color || 0), 0);
-        const totalCopyBw = previewDetails.reduce((sum, r) => sum + (r.copy_bw || 0), 0);
-        const totalCopyColor = previewDetails.reduce((sum, r) => sum + (r.copy_color || 0), 0);
-        const totalScan = previewDetails.reduce((sum, r) => sum + (r.scanner || 0), 0);
-        const totalPages = previewDetails.reduce((sum, r) => sum + (r.total_pages || 0), 0);
-        const totalCost = previewDetails.reduce((sum, r) => sum + (r.cost || 0), 0);
-        const totalUsers = previewDetails.length;
-
-        return (
-          <div className="custom-modal-overlay">
-            <div 
-              className="custom-modal-content glass-card animate-fade-in p-4" 
-              style={{ 
-                maxWidth: '1000px', 
-                width: '95%', 
-                maxHeight: '90vh', 
-                display: 'flex', 
-                flexDirection: 'column',
-                background: '#ffffff',
-                border: '1px solid #cbd5e1',
-                color: '#1e293b'
-              }}
-            >
-              {/* Modal Header */}
-              <div className="d-flex justify-content-between align-items-center pb-3 border-bottom mb-3">
-                <div className="d-flex align-items-center gap-2">
-                  <div className="bg-light p-2 rounded text-primary" style={{ background: 'rgba(200, 35, 51, 0.08)' }}>
-                    <FileText size={24} className="text-primary" />
-                  </div>
-                  <div>
-                    <h5 className="fw-bold text-dark mb-0 text-truncate" style={{ maxWidth: '400px' }} title={previewReport.filename}>
-                      {previewReport.filename}
-                    </h5>
-                    <small className="text-secondary">
-                      งวดรายงาน: <strong>{formatThaiMonthYear(previewReport.report_date)}</strong> 
-                      {previewReport.printer_name && (
-                        <> | เครื่องพิมพ์: <strong>{previewReport.printer_name}</strong></>
-                      )}
-                    </small>
-                  </div>
-                </div>
-                <div className="d-flex align-items-center gap-2">
-                  {/* Mask Toggle */}
-                  <button 
-                    onClick={() => setIsMasked(!isMasked)} 
-                    className="btn btn-sm btn-outline-secondary form-glass py-1 px-2 d-flex align-items-center gap-1"
-                    title={isMasked ? 'แสดงข้อมูลจริง' : 'ซ่อนข้อมูลส่วนตัว'}
-                  >
-                    {isMasked ? <Eye size={14} /> : <EyeOff size={14} />}
-                    {isMasked ? 'แสดงชื่อจริง' : 'ซ่อนชื่อ/รหัส'}
-                  </button>
-                  <button 
-                    onClick={() => {
-                      setPreviewReport(null);
-                      setPreviewDetails([]);
-                      setPreviewSearch('');
-                    }} 
-                    className="btn-close"
-                    aria-label="Close"
-                  ></button>
-                </div>
-              </div>
-
-              {/* Modal Body */}
-              <div className="flex-grow-1 d-flex flex-column" style={{ overflow: 'hidden' }}>
-                {previewLoading ? (
-                  <div className="d-flex flex-column align-items-center justify-content-center py-5 my-5 flex-grow-1">
-                    <div className="spinner-border text-primary mb-3" role="status" style={{ color: 'var(--accent-red)' }}>
-                      <span className="visually-hidden">กำลังโหลด...</span>
-                    </div>
-                    <span className="text-muted fw-semibold">กำลังดึงรายละเอียดข้อมูลจากฐานข้อมูล...</span>
-                  </div>
-                ) : (
-                  <>
-                    {/* Summary Stats Cards */}
-                    <div className="row g-2 mb-3">
-                      <div className="col-6 col-md-3">
-                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-red)', background: '#f8fafc' }}>
-                          <small className="text-secondary d-block mb-1">ยอดเงินรวมทั้งหมด</small>
-                          <span className="fw-bold text-gradient text-danger" style={{ fontSize: '1.2rem' }}>
-                            {totalCost.toLocaleString('th-TH', { minimumFractionDigits: 2 })} บาท
-                          </span>
-                        </div>
-                      </div>
-                      <div className="col-6 col-md-3">
-                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-purple)', background: '#f8fafc' }}>
-                          <small className="text-secondary d-block mb-1">จำนวนผู้ใช้งานในไฟล์</small>
-                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
-                            {totalUsers.toLocaleString()} คน
-                          </span>
-                        </div>
-                      </div>
-                      <div className="col-6 col-md-3">
-                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-green)', background: '#f8fafc' }}>
-                          <small className="text-secondary d-block mb-1">จำนวนพิมพ์ขาวดำรวม</small>
-                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
-                            {totalBw.toLocaleString()} แผ่น
-                          </span>
-                        </div>
-                      </div>
-                      <div className="col-6 col-md-3">
-                        <div className="p-3 border rounded-3 text-start bg-light" style={{ borderLeft: '4px solid var(--accent-amber)', background: '#f8fafc' }}>
-                          <small className="text-secondary d-block mb-1">จำนวนพิมพ์สีรวม</small>
-                          <span className="fw-bold text-dark" style={{ fontSize: '1.2rem' }}>
-                            {totalColor.toLocaleString()} แผ่น
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Search Bar */}
-                    <div className="mb-3 position-relative">
-                      <div className="input-group">
-                        <span className="input-group-text bg-white border-end-0">
-                          <Search size={16} className="text-muted" />
-                        </span>
-                        <input 
-                          type="text" 
-                          className="form-control form-glass border-start-0 ps-0" 
-                          placeholder="ค้นหาพนักงานด้วย รหัสผู้ใช้ หรือ ชื่อพนักงาน..." 
-                          value={previewSearch}
-                          onChange={(e) => setPreviewSearch(e.target.value)}
-                        />
-                        {previewSearch && (
-                          <button 
-                            className="btn btn-outline-secondary form-glass" 
-                            type="button"
-                            onClick={() => setPreviewSearch('')}
-                          >
-                            ล้างค่า
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Table Container */}
-                    <div className="table-responsive border rounded-3 flex-grow-1" style={{ overflowY: 'auto', background: '#f8fafc', maxHeight: '350px' }}>
-                      <table className="table table-bordered table-sm align-middle mb-0" style={{ fontSize: '0.85rem', borderCollapse: 'separate' }}>
-                        <thead className="position-sticky top-0 bg-white" style={{ zIndex: 2 }}>
-                          <tr className="table-light text-center text-secondary">
-                            <th className="py-2" style={{ background: '#f8fafc' }}>รหัสผู้ใช้</th>
-                            <th style={{ background: '#f8fafc' }}>ชื่อพนักงาน</th>
-                            <th style={{ background: '#f8fafc', width: '90px' }}>Print B&W</th>
-                            <th style={{ background: '#f8fafc', width: '90px' }}>Print Color</th>
-                            <th style={{ background: '#f8fafc', width: '90px' }}>Copy B&W</th>
-                            <th style={{ background: '#f8fafc', width: '90px' }}>Copy Color</th>
-                            <th style={{ background: '#f8fafc', width: '80px' }}>Scan</th>
-                            <th style={{ background: '#f8fafc', width: '90px' }}>รวมหน้า</th>
-                            <th style={{ background: '#f8fafc', width: '110px' }}>ค่าบริการ (บาท)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {filteredDetails.map((r) => {
-                            const displayUserId = isMasked ? maskValue(r.user_id) : r.user_id;
-                            const displayName = isMasked ? maskValue(r.name) : r.name;
-
-                            return (
-                              <tr key={r.id}>
-                                <td className="fw-semibold text-dark ps-3">{displayUserId}</td>
-                                <td className="text-dark">{displayName}</td>
-                                <td className="text-end text-muted">{(r.print_bw || 0).toLocaleString()}</td>
-                                <td className="text-end text-muted">{(r.print_color || 0).toLocaleString()}</td>
-                                <td className="text-end text-muted">{(r.copy_bw || 0).toLocaleString()}</td>
-                                <td className="text-end text-muted">{(r.copy_color || 0).toLocaleString()}</td>
-                                <td className="text-end text-muted">{(r.scanner || 0).toLocaleString()}</td>
-                                <td className="text-end fw-semibold text-dark">{(r.total_pages || 0).toLocaleString()}</td>
-                                <td className="text-end fw-bold text-gradient-green pe-3">{(r.cost || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</td>
-                              </tr>
-                            );
-                          })}
-                          {filteredDetails.length === 0 && (
-                            <tr>
-                              <td colSpan="9" className="text-center text-muted py-4">ไม่พบข้อมูลการใช้งานสำหรับคำค้นหานี้</td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Pagination / Total count indicator */}
-                    <div className="d-flex justify-content-between align-items-center mt-2 px-1" style={{ fontSize: '0.8rem' }}>
-                      <span className="text-muted">
-                        แสดง <strong>{filteredDetails.length}</strong> จาก <strong>{previewDetails.length}</strong> รายการ
-                      </span>
-                      {previewSearch && (
-                        <span className="badge bg-secondary">
-                          เปิดตัวกรองการค้นหาอยู่
-                        </span>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Modal Footer */}
-              <div className="pt-3 border-top mt-3 text-center">
+              <div className="d-flex justify-content-center gap-3">
                 <button 
-                  onClick={() => {
-                    setPreviewReport(null);
-                    setPreviewDetails([]);
-                    setPreviewSearch('');
-                  }} 
-                  className="btn btn-outline-secondary py-2 px-5"
+                  onClick={handleConfirmForceUpload} 
+                  className="btn btn-danger py-2 px-4 fw-bold"
+                  disabled={selectedUserIdsForImport.length === 0}
                 >
-                  ปิดหน้าต่าง
+                  นำเข้าเฉพาะข้อมูลที่เลือก
+                </button>
+                <button 
+                  onClick={() => setShowComparisonTable(false)} 
+                  className="btn btn-outline-secondary py-2 px-4"
+                >
+                  ย้อนกลับ
+                </button>
+                <button 
+                  onClick={handleCancelUpload} 
+                  className="btn btn-outline-secondary py-2 px-4"
+                >
+                  ยกเลิก
                 </button>
               </div>
             </div>

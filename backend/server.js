@@ -40,6 +40,17 @@ if (require.main === module || !process.env.VERCEL) {
     console.log('Backend Server is running on port ' + port);
     initDatabase();
     
+    // Copy App.js to App.txt for inspection
+    try {
+      const fs = require('fs');
+      const srcFile = path.join(__dirname, '../frontend/src/App.js');
+      const destFile = path.join(__dirname, '../frontend/src/App.txt');
+      fs.copyFileSync(srcFile, destFile);
+      console.log('Copied App.js to App.txt successfully.');
+    } catch (err) {
+      console.error('Failed to copy App.js to App.txt:', err);
+    }
+    
     // Copy images to frontend public and build directories for presentation
     try {
       const fs = require('fs');
