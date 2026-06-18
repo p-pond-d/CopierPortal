@@ -5,17 +5,24 @@ const csv = require('csv-parser');
 const stream = require('stream');
 const { sql, poolPromise } = require('../config/db');
 
-const ratesPath = path.join(__dirname, '../config/rates.json');
+const defaultRatesPath = path.join(__dirname, '../config/rates.json');
+const tmpRatesPath = '/tmp/rates.json';
+const isVercel = !!process.env.VERCEL;
+
+const ratesPath = isVercel ? tmpRatesPath : defaultRatesPath;
 
 // Helper to get rates from config file
 function getRates() {
   try {
-    if (fs.existsSync(ratesPath)) {
-      const data = fs.readFileSync(ratesPath, 'utf8');
+    if (isVercel && fs.existsSync(tmpRatesPath)) {
+      return JSON.parse(fs.readFileSync(tmpRatesPath, 'utf8'));
+    }
+    if (fs.existsSync(defaultRatesPath)) {
+      const data = fs.readFileSync(defaultRatesPath, 'utf8');
       return JSON.parse(data);
     }
   } catch (err) {
-    console.error('Error reading rates.json:', err);
+    console.error('Error reading rates:', err);
   }
   return {
     print_bw: 0.50,
