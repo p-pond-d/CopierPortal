@@ -1554,15 +1554,6 @@ function App() {
                   <span className="ms-1 d-inline">แยกตามประเภท</span>
                 </button>
               </li>
-              <li className="w-100">
-                <button 
-                  onClick={() => handleNavClick('about')} 
-                  className={`nav-link-custom w-100 text-start border-0 ${activeTab === 'about' ? 'active' : ''}`}
-                >
-                  <Info size={20} />
-                  <span className="ms-1 d-inline">เกี่ยวกับระบบ</span>
-                </button>
-              </li>
               {userRole === 'admin' && (
                 <li className="w-100">
                   <button 
@@ -1612,6 +1603,38 @@ function App() {
           
           {/* Security Controls Status (SC-3 Display) */}
           <div className="w-100 pt-3 border-top border-secondary">
+            {/* About System Button/Card */}
+            <div className="w-100 mb-2">
+              <button 
+                onClick={() => handleNavClick('about')}
+                className="d-flex align-items-center w-100 text-start border-0 p-2 text-white"
+                style={{ 
+                  fontSize: '0.8rem',
+                  background: activeTab === 'about' ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '12px',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-smooth)',
+                  boxShadow: 'none'
+                }}
+                onMouseOver={(e) => {
+                  if (activeTab !== 'about') {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.15)';
+                  }
+                }}
+                onMouseOut={(e) => {
+                  if (activeTab !== 'about') {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
+                  } else {
+                    e.currentTarget.style.background = 'rgba(255, 255, 255, 0.25)';
+                  }
+                }}
+              >
+                <Info size={14} className="me-2 text-white" />
+                <span className="fw-semibold">เกี่ยวกับระบบ</span>
+              </button>
+            </div>
+
             {userRole === 'admin' ? (
               <div className="glass-card p-2 d-flex flex-column align-items-center align-items-md-start text-muted" style={{ fontSize: '0.8rem' }}>
                 <div className="d-flex align-items-center text-warning mb-1">
