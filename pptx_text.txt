@@ -1,0 +1,131 @@
+
+=== SLIDE 1 ===
+Project Pitching Template | วิชาที่ 7
+วิชาที่ 7: AI Engineering / LLM / RAG / AI Workflow
+แบบฟอร์มนำเสนอโปรเจกต์ — กรอกข้อมูลให้ครบก่อนส่ง
+Submission Fields
+Project Topic (หัวข้อ):
+เลือกหัวข้อที่ต้องการทำ
+Topic Number:
+ระบุหมายเลข topic (1-10)
+Group Name:
+ชื่อกลุ่ม
+Date Submitted:
+วัน/เดือน/ปี
+
+=== SLIDE 2 ===
+Project Pitching Template | วิชาที่ 7
+AI Engineering / LLM / RAG / AI Workflow • Overview, problem statement, objectives
+1. Project Overview (ภาพรวมโปรเจกต์)
+Project Title:
+ชื่อโปรเจกต์ (ภาษาอังกฤษ)
+Project Description:
+อธิบายสั้น ๆ ว่าโปรเจกต์นี้ทำอะไร (2-3 ประโยค)
+Business Context:
+บริษัท / อุตสาหกรรม / บริบทที่โปรเจกต์นี้ใช้งาน
+2. Problem Statement (ปัญหาที่ต้องการแก้ไข)
+Current Problem:
+ปัญหาที่มีอยู่ตอนนี้คืออะไร? ทำไมถึงเป็นปัญหา?
+Impact of Problem:
+ปัญหานี้กระทบอะไรบ้าง? (เวลา, ค่าใช้จ่าย, ความแม่นยำ ฯลฯ)
+Proposed Solution:
+โปรเจกต์นี้จะแก้ปัญหาอย่างไร?
+3. Objectives (วัตถุประสงค์) — SMART Goals
+ระบุวัตถุประสงค์ 3-5 ข้อ (SMART Goals)
+1.
+ระบุวัตถุประสงค์...
+2.
+ระบุวัตถุประสงค์...
+3.
+ระบุวัตถุประสงค์...
+4.
+ระบุวัตถุประสงค์...
+5.
+ระบุวัตถุประสงค์...
+Tip
+Use measurable outcomes where possible, e.g., reduce SLA breach detection time or improve report accuracy.
+
+=== SLIDE 3 ===
+Project Pitching Template | วิชาที่ 7
+AI Engineering / LLM / RAG / AI Workflow • Scope, AI / LLM / RAG Components, workflow
+4. Scope (ขอบเขตโปรเจกต์)
+In Scope
+Out of Scope
+สิ่งที่โปรเจกต์ครอบคลุม
+สิ่งที่โปรเจกต์ไม่ครอบคลุม
+5. AI / LLM / RAG Components (องค์ประกอบของระบบ AI)
+LLM Model Used
+RAG / Knowledge Base
+Agent / Workflow
+GPT-4o / Claude / Gemini ฯลฯ
+เอกสาร/ข้อมูลที่ใช้ใน RAG
+ประเภท Agent หรือ AI Workflow
+Input
+AI Processing
+Output
+Human Review
+ข้อมูล/คำถามที่รับเข้า
+AI ประมวลผลอย่างไร?
+ผลลัพธ์ที่ได้คืออะไร?
+มีคนตรวจ/อนุมัติไหม?
+Hallucination /Risk Mitigation:
+ระบุวิธีลด hallucination หรือ error ในระบบ AI
+6. Workflow / Architecture (ขั้นตอนการทำงาน)
+อธิบาย flow ของระบบตั้งแต่ต้นจนจบ (Input -> Process -> Output)
+Step 1
+Step 2
+Step 3
+Step 4
+Step 5
+Step 6
+ระบุ step...
+ระบุ step...
+ระบุ step...
+ระบุ step...
+ระบุ step...
+ระบุ step...
+Architecture Notes:
+อธิบายเพิ่มเติมถ้า flow ซับซ้อน หรือมี branching
+
+=== SLIDE 4 ===
+Project Pitching Template | วิชาที่ 7
+AI Engineering / LLM / RAG / AI Workflow • Tools, outcomes, timeline, team
+7. Tools & Technologies
+Programming
+Language
+Database / Storage
+Frameworks /
+Libraries
+Visualization /
+Output
+Python / SQL / JS ฯลฯ
+PostgreSQL / S3 /
+BigQuery ฯลฯ
+Pandas / Spark /
+LangChain ฯลฯ
+Tableau / PowerBI /
+Streamlit ฯลฯ
+8. Expected Outcomes (ผลลัพธ์ที่คาดหวัง)
+Deliverables:
+สิ่งที่จะส่งมอบเมื่อโปรเจกต์เสร็จ (Dashboard, Report, API ฯลฯ)
+Success Metrics:
+วัดความสำเร็จอย่างไร? (KPI, Accuracy, SLA ฯลฯ)
+9. Timeline (แผนการดำเนินงาน)
+สัปดาห์ที่ 1-2
+สัปดาห์ที่ 3-4
+สัปดาห์ที่ 5-6
+สัปดาห์ที่ 7-8
+ระบุงานที่ทำ...
+ระบุงานที่ทำ...
+ระบุงานที่ทำ...
+ระบุงานที่ทำ...
+10. Team Members (สมาชิกในกลุ่ม)
+#
+ชื่อ - นามสกุล
+รหัสนักศึกษา
+บทบาทใน Project
+1
+2
+3
+4
+5

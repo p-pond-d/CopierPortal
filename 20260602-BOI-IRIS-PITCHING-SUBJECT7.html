@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Pitching - Copier Portal Dashboard</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600;700&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg-primary: #f4f6f9;
+      --bg-card: rgba(255, 255, 255, 0.9);
+      --border-color: rgba(226, 232, 240, 0.8);
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --accent-red: #c82333;
+      --accent-red-hover: #a71d2a;
+      --accent-blue: #1e3a8a;
+      --accent-gold: #b45309;
+      --gradient-accent: linear-gradient(135deg, #c82333 0%, #1e3a8a 100%);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'TH Sarabun PSK', 'Sarabun', sans-serif;
+      font-size: 1.15rem;
+      background-color: var(--bg-primary);
+      background-image: radial-gradient(rgba(200, 35, 51, 0.03) 1px, transparent 0), radial-gradient(rgba(30, 58, 138, 0.02) 1px, transparent 0);
+      background-size: 24px 24px;
+      background-position: 0 0, 12px 12px;
+      color: var(--text-main);
+      line-height: 1.5;
+      padding: 40px 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 50px;
+      animation: fadeIn 1s ease-out;
+    }
+
+    .badge-subject {
+      display: inline-block;
+      padding: 6px 16px;
+      background: rgba(200, 35, 51, 0.08);
+      border: 1px solid rgba(200, 35, 51, 0.2);
+      border-radius: 30px;
+      color: var(--accent-red);
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      letter-spacing: 0.5px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+      background: linear-gradient(90deg, #c82333, #1e3a8a, #b45309);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sub-title {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      font-weight: 400;
+    }
+
+    /* Print / View toggler info */
+    .print-info {
+      background: rgba(200, 35, 51, 0.05);
+      border: 1px solid rgba(200, 35, 51, 0.15);
+      border-radius: 12px;
+      padding: 12px 20px;
+      margin-bottom: 40px;
+      font-size: 0.9rem;
+      color: var(--accent-red);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02);
+    }
+    
+    .print-btn {
+      background: var(--accent-red);
+      border: none;
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-family: 'TH Sarabun PSK', 'Sarabun', sans-serif;
+      font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .print-btn:hover {
+      background: var(--accent-red-hover);
+      transform: translateY(-1px);
+    }
+
+    .print-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Slide Layout styling */
+    .slide {
+      background: var(--bg-card);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 40px;
+      margin-bottom: 50px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+      animation: slideUp 0.8s ease-out;
+      transition: transform 0.3s ease;
+    }
+
+    .slide:hover {
+      transform: translateY(-2px);
+    }
+
+    .slide::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--gradient-accent);
+    }
+
+    .slide-number {
+      position: absolute;
+      top: 20px;
+      right: 30px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.03);
+      padding: 4px 12px;
+      border-radius: 30px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .slide-header {
+      border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+      padding-bottom: 15px;
+      margin-bottom: 25px;
+    }
+
+    .slide-header h2 {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .slide-header p {
+      font-size: 0.85rem;
+      color: var(--accent-red);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    /* Grid layouts inside slides */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+      align-items: start;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width: 768px) {
+      .grid-2, .grid-3 {
+        grid-template-columns: 1fr;
+      }
+      .slide {
+        padding: 25px 20px;
+      }
+    }
+
+    /* Section Cards */
+    .sec-card {
+      background: rgba(255, 255, 255, 0.5);
+      border: 1px solid rgba(0, 0, 0, 0.04);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.01);
+    }
+
+    .sec-card-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--accent-red);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sec-card-title.blue { color: var(--accent-blue); }
+    .sec-card-title.gold { color: var(--accent-gold); }
+
+    .sec-card ul {
+      list-style-type: none;
+      padding-left: 0;
+    }
+
+    .sec-card li {
+      position: relative;
+      padding-left: 20px;
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .sec-card li::before {
+      content: '•';
+      position: absolute;
+      left: 5px;
+      color: var(--accent-blue);
+      font-weight: bold;
+    }
+
+    .sec-card li.red-dot::before {
+      color: var(--accent-red);
+    }
+
+    p.description {
+      font-size: 0.95rem;
+      color: var(--text-main);
+      line-height: 1.6;
+    }
+
+    /* Steps list styling */
+    .steps-container {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 15px;
+      background: rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      padding: 12px 18px;
+      border-radius: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.01);
+    }
+
+    .step-badge {
+      background: var(--accent-blue);
+      color: white;
+      font-weight: 700;
+      font-size: 0.85rem;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 3px;
+    }
+
+    .step-item:nth-child(even) .step-badge {
+      background: var(--accent-red);
+    }
+
+    .step-details h4 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+
+    .step-details p {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+    }
+
+    /* Key-Value details layout */
+    .kv-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .kv-item {
+      display: flex;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+      padding-bottom: 8px;
+    }
+
+    .kv-key {
+      font-weight: 600;
+      color: var(--accent-gold);
+      width: 180px;
+      flex-shrink: 0;
+      font-size: 0.95rem;
+    }
+
+    .kv-val {
+      color: var(--text-main);
+      font-size: 0.95rem;
+    }
+
+    /* Tech Icons/Badges list */
+    .tech-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 5px;
+    }
+
+    .tech-tag {
+      background: rgba(200, 35, 51, 0.04);
+      border: 1px solid rgba(200, 35, 51, 0.1);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--accent-red);
+    }
+
+    /* Team Table styling */
+    table.team-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    table.team-table th, table.team-table td {
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 10px 14px;
+      text-align: left;
+      font-size: 0.95rem;
+      white-space: nowrap;
+    }
+
+    table.team-table th {
+      background: rgba(200, 35, 51, 0.04);
+      color: var(--accent-red);
+      font-weight: 600;
+      border-bottom: 2px solid rgba(200, 35, 51, 0.1);
+    }
+
+    table.team-table tr:nth-child(even) td {
+      background: rgba(0, 0, 0, 0.01);
+    }
+
+    /* Key Animations */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Embedded Slide Images */
+    .slide-img-container {
+      margin-top: 15px;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+      background: #ffffff;
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+    
+    .slide-img-container:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+    
+    .slide-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    
+    .slide-img-caption {
+      background: #f8fafc;
+      padding: 10px 15px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: center;
+      border-top: 1px solid var(--border-color);
+    }
+
+    .scope-grid {
+      display: grid;
+      grid-template-columns: 1.3fr 0.7fr;
+      gap: 15px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .scope-grid {
+        grid-template-columns: 1fr;
+        justify-items: center;
+      }
+    }
+
+    /* Print Layout Styling */
+    @media print {
+      body {
+        background-color: white;
+        color: black;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 100%;
+      }
+
+      .print-info {
+        display: none;
+      }
+
+      .slide {
+        background: white !important;
+        border: 2px solid #333 !important;
+        box-shadow: none !important;
+        page-break-after: always;
+        margin-bottom: 0;
+        padding: 30px;
+        border-radius: 0;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+
+      .slide::before {
+        display: none;
+      }
+
+      .slide-number {
+        color: #333 !important;
+        background: #f0f0f0 !important;
+        border: 1px solid #ccc !important;
+      }
+
+      .slide-header h2 {
+        color: black !important;
+      }
+
+      .slide-header p {
+        color: #c82333 !important;
+      }
+
+      .sec-card {
+        background: #fafafa !important;
+        border: 1px solid #ddd !important;
+      }
+
+      .sec-card-title {
+        color: #c82333 !important;
+      }
+      .sec-card-title.blue { color: #1e3a8a !important; }
+      .sec-card-title.gold { color: #b45309 !important; }
+
+      .kv-key {
+        color: #b45309 !important;
+      }
+
+      .kv-val, .sec-card li, p.description {
+        color: #222 !important;
+      }
+
+      .step-item {
+        background: #fafafa !important;
+        border: 1px solid #ddd !important;
+      }
+
+      .step-badge {
+        background: #333 !important;
+        color: white !important;
+      }
+
+      .step-details h4 {
+        color: black !important;
+      }
+
+      .step-details p {
+        color: #555 !important;
+      }
+
+      table.team-table th {
+        background: #f0f0f0 !important;
+        color: black !important;
+      }
+
+      table.team-table td {
+        color: black !important;
+      }
+
+      .slide-img-container {
+        margin-top: 10px !important;
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+        background: #ffffff !important;
+      }
+
+      .slide-img {
+        max-height: 180px !important;
+        object-fit: contain !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <header>
+      <span class="badge-subject">วิชาที่ 7: AI Engineering / LLM / RAG / AI Workflow</span>
+      <h1>แบบฟอร์มนำเสนอโปรเจกต์ (Project Pitching)</h1>
+      <p class="sub-title">ระบบแดชบอร์ดความมั่นคงและความเป็นส่วนตัวในการประมวลผลค่าบริการการพิมพ์ขององค์กร</p>
+    </header>
+
+    <div class="print-info">
+      <span>💡 <strong>คำแนะนำการพิมพ์:</strong> เอกสารชุดนี้ได้รับการออกแบบจัดหน้ามาให้รองรับการสั่งพิมพ์หน้าต่อหน้า (Page-by-Page) คุณสามารถกดพิมพ์เพื่อเซฟเป็นสไลด์นำเสนอ PDF ได้ทันที</span>
+      <button class="print-btn" onclick="window.print()">🖨️ สั่งพิมพ์ / บันทึก PDF</button>
+    </div>
+
+    <!-- SLIDE 1 -->
+    <section class="slide">
+      <span class="slide-number">SLIDE 1</span>
+      <div class="slide-header">
+        <h2>ข้อมูลการนำเสนอโครงงาน</h2>
+        <p>Submission Fields</p>
+      </div>
+
+      <div class="sec-card" style="margin-top: 10px;">
+        <div class="kv-list">
+          <div class="kv-item">
+            <span class="kv-key">Project Topic (หัวข้อ):</span>
+            <span class="kv-val">ระบบวิเคราะห์ปริมาณการพิมพ์และคำนวณค่าบริการระดับองค์กร พร้อมการรักษาความปลอดภัยข้อมูลตามมาตรฐาน PDPA ด้วย AI Workflow</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-key">Topic Number:</span>
+            <span class="kv-val">Topic 7 (AI Engineering / LLM / RAG / AI Workflow)</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-key">Group Name:</span>
+            <span class="kv-val">IRIS Subject 7 - Group Developer</span>
+          </div>
+          <div class="kv-item">
+            <span class="kv-key">Date Submitted:</span>
+            <span class="kv-val">11 มิถุนายน 2569</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 2 -->
+    <section class="slide">
+      <span class="slide-number">SLIDE 2</span>
+      <div class="slide-header">
+        <h2>ภาพรวม ปัญหา และวัตถุประสงค์</h2>
+        <p>Overview, Problem Statement, Objectives</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="sec-card">
+          <div class="sec-card-title">
+            <span>📝</span> 1. Project Overview
+          </div>
+          <div class="kv-list" style="gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Project Title:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 3px;">Copier Portal: AI-Powered Copier Analytics & Privacy Masking Dashboard</p>
+            </div>
+            <div style="margin-top: 5px;">
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Description (ภาษาไทย):</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 3px;">ระบบแดชบอร์ดอัจฉริยะที่ใช้ AI Normalization ในการแปลงข้อมูลรายงานเครื่องพิมพ์ต่างรูปแบบให้อยู่ในฐานข้อมูลเดียวกัน ทำการเข้ารหัสข้อมูลส่วนบุคคล (PDPA Masking) อัตโนมัติก่อนส่งออก และประมวลผลข้อมูลเปรียบเทียบสถิติการเติบโตแบบปีต่อปี (Year-over-Year) เพื่อการควบคุมต้นทุน</p>
+            </div>
+            <div style="margin-top: 5px;">
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Business Context:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 3px;">ใช้งานในหน่วยงานสนับสนุนไอทีและฝ่ายการเงินขององค์กรที่ต้องการรวมรวมสถิติการใช้วัสดุสิ้นเปลืองการพิมพ์จากเครื่องพิมพ์หลากหลายยี่ห้อ (เช่น RICOH, Fuji Xerox)</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-card-title">
+            <span>🚨</span> 2. Problem Statement
+          </div>
+          <div class="kv-list" style="gap: 8px; font-size: 0.9rem;">
+            <div>
+              <strong style="color: var(--accent-gold);">Current Problem:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 2px;">โครงสร้างรายงานการพิมพ์ (CSV/Excel) ของผู้ผลิตเครื่องพิมพ์แต่ละยี่ห้อมีคอลัมน์และหัวตารางที่สะกดต่างกัน ทำให้ต้องเขียนโค้ดเฉพาะเจาะจงหรือทำงานแบบแมนนวล และมีข้อมูลส่วนบุคคล เช่น User ID และชื่อพนักงานปะปนอยู่ซึ่งเสี่ยงต่อการผิดกฎหมาย PDPA หากไม่มีระบบกรองที่ดี</p>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold);">Impact of Problem:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 2px;">เกิดความผิดพลาดในการรวมสถิติ เสียเวลาวิเคราะห์ และเสี่ยงต่อการรั่วไหลของข้อมูลระบุตัวตนพนักงานเมื่อส่งออกรายงานสรุปสถิติให้ฝ่ายการเงิน</p>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold);">Proposed Solution:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 2px;">ใช้ AI ในการจับคู่โครงสร้างคอลัมน์ (Schema Mapping) แบบไดนามิก ผนวกกับระบบ Masking ข้อมูลตามบทบาทผู้ใช้ (Role-based access) เพื่อล้างข้อมูลพนักงานโดยยังสามารถจับคู่ประวัติและเปรียบเทียบค่าใช้จ่ายรายปี (YoY) ได้อย่างถูกต้อง</p>
+            </div>
+          </div>
+      </div>
+
+      <div class="slide-img-container" style="margin-top: 20px;">
+        <img src="./images/dashboard_desktop.png" alt="หน้าจอแดชบอร์ดสรุปยอดใช้งานและแนวโน้มรายเดือน" class="slide-img" style="max-height: 300px; object-fit: cover; object-position: top;">
+        <div class="slide-img-caption">รูปที่ 1: หน้าจอรายงานสรุปยอดการใช้งานเครื่องพิมพ์พร้อมกราฟวิเคราะห์แนวโน้ม (Desktop View)</div>
+      </div>
+
+      <div class="sec-card" style="margin-top: 20px;">
+        <div class="sec-card-title gold">
+          <span>🎯</span> 3. Objectives — SMART Goals
+        </div>
+        <div class="grid-2" style="gap: 20px;">
+          <ul>
+            <li class="red-dot"><strong>ลดเวลาการประมวลผลข้อมูล</strong> จากการรวมรายงานต่างยี่ห้อแมนนวล 4 ชั่วโมงต่อเดือน เหลือไม่เกิน 2 นาทีด้วยระบบนำเข้าอัตโนมัติ (100% Automated)</li>
+            <li class="red-dot"><strong>การันตีความปลอดภัย PDPA 100%</strong> ข้อมูลระบุตัวตน (User ID และชื่อ) จะต้องถูกเข้ารหัส / Masking ก่อนการแปลงไฟล์หรือการส่งออกรายงานในกลุ่มผู้ใช้ปกติ</li>
+          </ul>
+          <ul>
+            <li class="red-dot"><strong>วิเคราะห์ความคุ้มทุนข้ามปี (YoY Growth Analysis)</strong> ระบบต้องคำนวณและชี้วัดสัดส่วนการเติบโตหรือยอดลดลงของค่าบริการได้เป็นเปอร์เซ็นต์แบบปีต่อปีเทียบเดือนตรงกัน</li>
+            <li class="red-dot"><strong>ลดโอกาสการเกิดข้อผิดพลาด (SLA Accuracy)</strong> ข้อมูลจำนวนหน้าและราคาค่าบริการรวมต้องคำนวณถูกต้องตามตารางเรตบริการปัจจุบันด้วยความถูกต้อง 100%</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 3 -->
+    <section class="slide">
+      <span class="slide-number">SLIDE 3</span>
+      <div class="slide-header">
+        <h2>ขอบเขต เทคโนโลยี AI และขั้นตอนการทำงาน</h2>
+        <p>Scope, AI Components, Workflow</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="sec-card">
+          <div class="sec-card-title">
+            <span>🔍</span> 4. Scope (ขอบเขตโปรเจกต์)
+          </div>
+          <div class="scope-grid">
+            <div class="kv-list" style="gap: 10px;">
+              <div>
+                <strong style="color: var(--accent-blue); font-size: 0.88rem;">In Scope:</strong>
+                <ul style="margin-top: 4px;">
+                  <li style="font-size: 0.88rem;">การนำเข้าไฟล์ CSV/Excel ของเครื่องพิมพ์ยี่ห้อต่างๆ</li>
+                  <li style="font-size: 0.88rem;">ระบบ AI Mapping หัวตารางเพื่อเก็บข้อมูลลง DB โครงสร้างกลาง</li>
+                  <li style="font-size: 0.88rem;">กลไก Masking ข้อมูลผู้ใช้แยกบทบาท (Admin / User ทั่วไป)</li>
+                  <li style="font-size: 0.88rem;">การแสดงผลกราฟแนวโน้ม และกราฟเปรียบเทียบสถิติรายปี (YoY)</li>
+                  <li style="font-size: 0.88rem;">ระบบบันทึก Log กิจกรรมการนำเข้าและนำออกไฟล์</li>
+                </ul>
+              </div>
+              <div>
+                <strong style="color: var(--accent-red); font-size: 0.88rem;">Out of Scope:</strong>
+                <ul style="margin-top: 4px;">
+                  <li style="font-size: 0.88rem; opacity: 0.85;" class="red-dot">การดึงยอดพิมพ์แบบ SNMP Real-time</li>
+                  <li style="font-size: 0.88rem; opacity: 0.85;" class="red-dot">ระบบชำระเงินค่าบริการออนไลน์ (Payment Gateway)</li>
+                </ul>
+              </div>
+            </div>
+            <div class="slide-img-container" style="margin-top: 0;">
+              <img src="./images/dashboard_mobile.png" alt="หน้าจอแสดงผลบนอุปกรณ์เคลื่อนที่ RWD Mobile" class="slide-img" style="max-height: 240px; object-fit: contain; background: #ffffff;">
+              <div class="slide-img-caption" style="font-size: 0.72rem; padding: 6px 10px;">รูปที่ 2: หน้าจอแสดงผล RWD (Mobile View)</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-card-title blue">
+            <span>🤖</span> 5. AI / LLM / RAG Components
+          </div>
+          <div class="kv-list" style="gap: 10px; font-size: 0.88rem;">
+            <div>
+              <strong style="color: var(--accent-gold);">LLM Model Used:</strong>
+              <span class="kv-val">Gemini 1.5 Flash / GPT-4o-mini สำหรับการทำ Dynamic Header Extraction & Schema Mapping เพื่อแมปคอลัมน์ที่ไม่ตรงกันให้อยู่ในมาตรฐานเดียวกัน</span>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold);">RAG / Knowledge Base:</strong>
+              <span class="kv-val">ตารางอัตราเรตค่าบริการล่าสุด (Rates) และประวัติการพิมพ์ย้อนหลัง เพื่อใช้ในการวิเคราะห์ความผิดปกติ (Anomaly Detection)</span>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold);">Agent / Workflow:</strong>
+              <span class="kv-val">AI Agent สำหรับการวิเคราะห์หาปริมาณการพิมพ์และราคาบริการที่สูงผิดปกติข้ามรอบงวดรายงาน (Usage & Cost Anomaly Alert Agent)</span>
+            </div>
+            <div style="margin-top: 5px;">
+              <strong style="color: var(--accent-blue); font-size: 0.88rem;">AI Processing Workflow:</strong>
+              <div style="font-size: 0.82rem; padding-left: 10px; margin-top: 2px;">
+                • <strong>Input:</strong> ไฟล์รายงานการใช้งานเครื่องพิมพ์แบบดิบ (CSV/Excel) และอัตราเรตค่าบริการ<br>
+                • <strong>AI Processing:</strong> LLM วิเคราะห์หัวตารางเพื่อทำโครงสร้าง Schema Normalization และกรองความผิดปกติของข้อมูลการพิมพ์<br>
+                • <strong>Output:</strong> ข้อมูลประวัติการประมวลผลการใช้อุปกรณ์ที่กรอง/Masking แล้วพร้อมเข้าสู่ DB และคำแนะนำกรณีพฤติกรรมใช้งานผิดปกติ<br>
+                • <strong>Human Review:</strong> ผู้ดูแลระบบ (Admin) ตรวจทานการแจ้งเตือนความผิดปกติ และกดอนุมัติเขียนทับข้อมูล (Force Import) กรณีรอบรายงานซ้ำ
+              </div>
+            </div>
+            <div style="margin-top: 5px;">
+              <strong style="color: var(--accent-red); font-size: 0.88rem;">Hallucination / Risk Mitigation:</strong>
+              <span class="kv-val">กำหนด Strict JSON schema ใน Prompt บังคับให้ LLM คืนค่าแมปปิ้งโครงสร้าง 100% พร้อมสร้างระบบควบคุมขีดจำกัดความถูกต้อง (Rule-based boundaries check) ในฝั่งหลังบ้าน</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-card" style="margin-top: 20px;">
+        <div class="sec-card-title gold">
+          <span>⚙️</span> 6. Workflow / Architecture (ขั้นตอนการทำงาน)
+        </div>
+        <div class="grid-2">
+          <div class="steps-container">
+            <div class="step-item">
+              <span class="step-badge">1</span>
+              <div class="step-details">
+                <h4>Upload File (Ingestion)</h4>
+                <p>ผู้ใช้ลากวางไฟล์ CSV/Excel รายงานของงวดเดือนและเครื่องพิมพ์ยี่ห้อใดๆ เข้าสู่ระบบ</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-badge">2</span>
+              <div class="step-details">
+                <h4>AI Schema Normalization & Validation</h4>
+                <p>AI Engine อ่านโครงสร้างหัวคอลัมน์ ยืนยันความถูกต้อง และเปลี่ยนรูปแบบข้อมูลให้พร้อมเก็บลง DB โครงสร้างกลาง</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-badge">3</span>
+              <div class="step-details">
+                <h4>PDPA Masking Engine</h4>
+                <p>สกัดและ Mask รหัสพนักงานรวมถึงชื่อพนักงานด้วยอัลกอริทึม (First/Last Char) สำหรับผู้ใช้บทบาทปกติ</p>
+              </div>
+            </div>
+          </div>
+          <div class="steps-container">
+            <div class="step-item">
+              <span class="step-badge">4</span>
+              <div class="step-details">
+                <h4>Database Ingestion & Cache Update</h4>
+                <p>บันทึกประวัติลง PostgreSQL และอัปเดตตารางสรุปรายปี/รายเดือน (MonthlySummaries) อัตโนมัติ</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-badge">5</span>
+              <div class="step-details">
+                <h4>YoY Analysis & Chart Rendering</h4>
+                <p>แดชบอร์ดฝั่ง React ดึงข้อมูลจาก API มาแสดงกราฟแนวโน้มข้ามปี และตารางเปรียบเทียบสถิติ YoY</p>
+              </div>
+            </div>
+            <div class="step-item">
+              <span class="step-badge">6</span>
+              <div class="step-details">
+                <h4>Security Logs & Export</h4>
+                <p>บันทึก Log ทุกๆ กิจกรรมการอัปโหลดหรือนำออกรายงานสรุปทางการเงิน (Excel) ของ Admin</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div style="margin-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.08); padding-top: 15px;">
+          <strong class="kv-key" style="color: var(--accent-gold); font-size: 0.95rem; display: block; margin-bottom: 5px;">Architecture Notes:</strong>
+          <p class="description" style="font-size: 0.9rem;">
+            ระบบทำงานแบบ 3-tier architecture (React, Node.js/Express, PostgreSQL) โดยเชื่อมต่อกับฐานข้อมูล PostgreSQL บนระบบ Neon Cloud Database เพื่อความมั่นคงสูง และเพื่อเพิ่มประสิทธิภาพสูงสุดในการวิเคราะห์เปรียบเทียบสถิติรายปี (YoY) ระบบมีการออกแบบตารางแคชสรุปข้อมูลประจำเดือน <code>MonthlySummaries</code> เพื่อช่วยลดปริมาณการคิวรีลงตารางหลัก <code>UsageDetails</code> ที่มีข้อมูลดิบปริมาณมหาศาล ป้องกันคิวรีค้างหรือฐานข้อมูลทำงานหนักเกินไป
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SLIDE 4 -->
+    <section class="slide">
+      <span class="slide-number">SLIDE 4</span>
+      <div class="slide-header">
+        <h2>เครื่องมือ ผลลัพธ์ แผนดำเนินงาน และสมาชิก</h2>
+        <p>Tools, Outcomes, Timeline, Team</p>
+      </div>
+
+      <div class="grid-2">
+        <div class="sec-card">
+          <div class="sec-card-title">
+            <span>🛠️</span> 7. Tools & Technologies
+          </div>
+          <div class="kv-list" style="gap: 8px;">
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Programming Languages:</strong>
+              <div class="tech-badges">
+                <span class="tech-tag">JavaScript (ES6)</span>
+                <span class="tech-tag">Python (Data generation)</span>
+                <span class="tech-tag">SQL (Query tuning)</span>
+              </div>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Database & Storage:</strong>
+              <div class="tech-badges">
+                <span class="tech-tag">PostgreSQL (Cloud Neon Database)</span>
+              </div>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Frameworks / Libraries:</strong>
+              <div class="tech-badges">
+                <span class="tech-tag">React.js</span>
+                <span class="tech-tag">Express.js (Node.js)</span>
+                <span class="tech-tag">Chart.js / react-chartjs-2</span>
+                <span class="tech-tag">SheetJS (xlsx)</span>
+              </div>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold); font-size: 0.9rem;">Visualization / Output:</strong>
+              <div class="tech-badges">
+                <span class="tech-tag">React Web Dashboard (RWD)</span>
+                <span class="tech-tag">Chart.js (Interactive Graphs)</span>
+                <span class="tech-tag">SheetJS XLSX Export (Custom formatted Excel)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="sec-card">
+          <div class="sec-card-title">
+            <span>📈</span> 8. Expected Outcomes (ผลลัพธ์ที่คาดหวัง)
+          </div>
+          <div class="kv-list" style="gap: 8px; font-size: 0.9rem;">
+            <div>
+              <strong style="color: var(--accent-gold);">Deliverables:</strong>
+              <p class="description" style="font-size: 0.9rem; margin-top: 2px;">
+                ระบบหน้าเว็บสำหรับพนักงานและผู้บริหาร (Web Dashboard Portal) พร้อมฟังก์ชันคำนวณอัตโนมัติ, สคริปต์ความปลอดภัยในการเคลียร์และสร้างข้อมูลจำลอง, และรายงานผลในรูปแบบไฟล์ Excel (XLSX) แยกรายปี/รายเดือน
+              </p>
+            </div>
+            <div>
+              <strong style="color: var(--accent-gold);">Success Metrics:</strong>
+              <ul style="margin-top: 2px;">
+                <li style="font-size: 0.88rem;"><strong>import error < 0.1%:</strong> การนำเข้าไฟล์และจัดรูปแบบหัวคอลัมน์โดย AI มีความถูกต้องและแม่นยำสูง</li>
+                <li style="font-size: 0.88rem;"><strong>100% compliance:</strong> ข้อมูล User ID/Name ที่ปรากฏบนการดาวน์โหลดไฟล์สำหรับกลุ่มผู้ใช้ทั่วไปจะต้องไม่มีการรั่วไหล</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="slide-img-container" style="margin-top: 20px;">
+        <img src="./images/system_logs.png" alt="หน้าจอประวัติการทำรายการความปลอดภัย" class="slide-img" style="max-height: 280px; object-fit: cover; object-position: top;">
+        <div class="slide-img-caption">รูปที่ 3: ระบบบันทึกประวัติการเข้าใช้งานและกิจกรรมนำเข้า/นำออก (System Activity Logs) สำหรับผู้ดูแลระบบ</div>
+      </div>
+
+      <div class="sec-card" style="margin-top: 20px;">
+        <div class="sec-card-title gold">
+          <span>📅</span> 9. Timeline (แผนการดำเนินงาน - 8 สัปดาห์)
+        </div>
+        <div class="grid-2" style="gap: 20px; font-size: 0.9rem;">
+          <div class="kv-list" style="gap: 10px;">
+            <div>
+              <strong style="color: var(--accent-blue);">สัปดาห์ที่ 1-2: ฐานข้อมูลและการนำเข้า</strong>
+              <p class="description" style="font-size: 0.88rem; margin-top: 2px;">ออกแบบฐานข้อมูล สร้างตาราง และทำระบบ Dynamic Parser ในการรับไฟล์ พร้อมสร้าง mock CSV ข้อมูลปริมาณการพิมพ์</p>
+            </div>
+            <div>
+              <strong style="color: var(--accent-blue);">สัปดาห์ที่ 3-4: UI/UX ความเป็นส่วนตัวและ Log</strong>
+              <p class="description" style="font-size: 0.88rem; margin-top: 2px;">ปรับปรุง UX ให้รองรับ Mobile (RWD), เพิ่มกลไก Masking ตามบทบาทผู้ใช้ และระบบ Audit Activity Logs ใน backend</p>
+            </div>
+          </div>
+          <div class="kv-list" style="gap: 10px;">
+            <div>
+              <strong style="color: var(--accent-red);">สัปดาห์ที่ 5-6: การประมวลผลและการเปรียบเทียบ (YoY)</strong>
+              <p class="description" style="font-size: 0.88rem; margin-top: 2px;">ทำระบบคำนวณเปอร์เซ็นต์ YoY, กราฟเปรียบเทียบรายปีบน Dashboard และตารางสถิติสรุปเปรียบเทียบปีต่อปี</p>
+            </div>
+            <div>
+              <strong style="color: var(--accent-red);">สัปดาห์ที่ 7-8: AI Integration, ทดสอบ และส่งงาน</strong>
+              <p class="description" style="font-size: 0.88rem; margin-top: 2px;">เชื่อมต่อ AI Schema mapping, รัน verify.ps1 ทดสอบ integration test, ทำการแก้ไขข้อผิดพลาด และนำขึ้น Vercel/Postgres Cloud</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec-card" style="margin-top: 20px;">
+        <div class="sec-card-title gold">
+          <span>👥</span> 10. Team Members (สมาชิกผู้ร่วมพัฒนาโครงงาน)
+        </div>
+        <div class="table-responsive" style="overflow-x: auto; -webkit-overflow-scrolling: touch; width: 100%;">
+          <table class="team-table">
+            <thead>
+              <tr>
+                <th style="width: 8%;">ลำดับ</th>
+                <th style="width: 25%;">ชื่อ - นามสกุล</th>
+                <th style="width: 42%;">ตำแหน่งงาน</th>
+                <th style="width: 25%;">บทบาทใน Project</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td style="color: var(--text-main); font-weight: 600;">คุณหัสชัย ปาณะศรี</td>
+                <td>เจ้าหน้าที่สนับสนุนงานเทคโนโลยีสารสนเทศ</td>
+                <td>AI Engineer & Backend Developer</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td style="color: var(--text-main); font-weight: 600;">คุณคณพศ ไพนุสิน</td>
+                <td>ผู้ช่วยผู้จัดการแผนกเทคโนโลยีสารสนเทศ (ตรัง)</td>
+                <td>Frontend Developer & UX/UI Designer</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td style="color: var(--text-main); font-weight: 600;">คุณบุญชัย ศักดิ์สมานชัย</td>
+                <td>ผู้จัดการส่วนงานเทคโนโลยีสารสนเทศ (กรุงเทพฯ)</td>
+                <td>Project Manager & Product Owner</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+</body>
+</html>

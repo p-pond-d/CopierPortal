@@ -39,6 +39,37 @@ if (require.main === module || !process.env.VERCEL) {
   app.listen(port, () => {
     console.log('Backend Server is running on port ' + port);
     initDatabase();
+    
+    // Copy images to frontend public and build directories for presentation
+    try {
+      const fs = require('fs');
+      const srcDir = path.join(__dirname, '../images');
+      const destPublicDir = path.join(__dirname, '../frontend/public/images');
+      const destBuildDir = path.join(__dirname, '../frontend/build/images');
+      
+      const filesToCopy = ['dashboard_desktop.png', 'dashboard_mobile.png', 'system_logs.png'];
+      
+      const copyFiles = (src, dest) => {
+        if (fs.existsSync(src)) {
+          if (!fs.existsSync(dest)) {
+            fs.mkdirSync(dest, { recursive: true });
+          }
+          filesToCopy.forEach(file => {
+            const srcFile = path.join(src, file);
+            const destFile = path.join(dest, file);
+            if (fs.existsSync(srcFile)) {
+              fs.copyFileSync(srcFile, destFile);
+            }
+          });
+        }
+      };
+      
+      copyFiles(srcDir, destPublicDir);
+      copyFiles(srcDir, destBuildDir);
+      console.log('Successfully synced presentation images to frontend assets.');
+    } catch (copyErr) {
+      console.error('Failed to sync presentation images on backend startup:', copyErr);
+    }
   });
 } else {
   initDatabase();
